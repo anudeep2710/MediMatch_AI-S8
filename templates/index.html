@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediMatch - AI-Powered Drug Discovery Platform</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <!-- Global Styles -->
+    <link href="/static/css/navbar.css" rel="stylesheet">
+    
+    <!-- 3Dmol.js for Molecule Visualization -->
+    <script src="https://3dmol.org/build/3Dmol-min.js"></script>
+    <!-- Chart.js for Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #009688;
+            --primary-dark: #00796B;
+            --secondary-color: #4CAF50;
+            --accent-pink: #E91E63;
+            --accent-purple: #673AB7;
+            --text-dark: #212121;
+            --text-light: #9E9E9E;
+            --bg-light: #f5f7fa;
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.2);
+        }
+        
+        body {
+            background: linear-gradient(135deg, #009688 0%, #00796B 50%, #004D40 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        /* Glassmorphism Navbar */
+        .navbar {
+            background: rgba(0, 77, 64, 0.95) !important;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid var(--glass-border);
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.6rem;
+            color: white !important;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .navbar-brand i {
+            color: var(--secondary-color);
+        }
+        
+        .nav-link {
+            color: rgba(255, 255, 255, 0.85) !important;
+            font-weight: 500;
+            padding: 0.5rem 1rem !important;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-link:hover, .nav-link.active {
+            background: rgba(255, 255, 255, 0.15);
+            color: white !important;
+        }
+        
+        /* Glassmorphism Cards */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .main-container {
+            margin-top: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        /* Tab Styling */
+        .nav-tabs {
+            border-bottom: 2px solid rgba(0, 150, 136, 0.2);
+        }
+        
+        .nav-tabs .nav-link {
+            color: var(--text-dark) !important;
+            border: none;
+            border-radius: 12px 12px 0 0;
+            padding: 12px 24px;
+            font-weight: 600;
+            background: transparent;
+        }
+        
+        .nav-tabs .nav-link.active {
+            color: var(--primary-color) !important;
+            background: rgba(0, 150, 136, 0.1);
+            border-bottom: 3px solid var(--primary-color);
+        }
+        
+        .nav-tabs .nav-link:hover:not(.active) {
+            background: rgba(0, 150, 136, 0.05);
+        }
+        
+        /* 3D Viewer Container */
+        .molecule-viewer-container {
+            width: 100%;
+            height: 280px;
+            border-radius: 16px;
+            overflow: hidden;
+            background: linear-gradient(145deg, #ffffff, #f0f0f0);
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        .molecule-viewer-container canvas {
+            max-width: 100% !important;
+            max-height: 100% !important;
+        }
+        
+        /* Property Cards */
+        .property-card {
+            background: linear-gradient(145deg, #ffffff, #f8f9fa);
+            border-radius: 12px;
+            padding: 15px;
+            border-left: 4px solid var(--primary-color);
+            transition: transform 0.2s ease;
+        }
+        
+        .property-card:hover {
+            transform: translateX(5px);
+        }
+        
+        .property-label {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            font-weight: 500;
+        }
+        
+        .property-value {
+            font-size: 1.1rem;
+            color: var(--text-dark);
+            font-weight: 600;
+        }
+        
+        /* Buttons */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            border: none;
+            border-radius: 12px;
+            padding: 12px 28px;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(0, 150, 136, 0.4);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, var(--primary-dark), #004D40);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 150, 136, 0.5);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, var(--secondary-color), #388E3C);
+            border: none;
+            border-radius: 12px;
+        }
+        
+        /* Form Controls */
+        .form-control, .form-select {
+            border-radius: 12px;
+            border: 2px solid #e0e0e0;
+            padding: 12px 16px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 150, 136, 0.2);
+        }
+
+        /* Comparison Styles */
+        .side-by-side-comparison {
+            display: grid;
+            gap: 8px;
+        }
+
+        .comparison-row {
+            display: grid;
+            grid-template-columns: 200px 1fr 1fr;
+            gap: 10px;
+            padding: 10px 15px;
+            border-radius: 10px;
+            background: #f8f9fa;
+        }
+
+        .comparison-row:nth-child(odd) {
+            background: #ffffff;
+        }
+
+        .comparison-label {
+            font-weight: 600;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+        }
+
+        .comparison-value {
+            padding: 8px 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        /* Toxicity Alerts */
+        .toxicity-alert {
+            background: linear-gradient(135deg, #ffebee, #ffcdd2);
+            border-left: 4px solid #f44336;
+            padding: 12px 16px;
+            border-radius: 8px;
+            color: #c62828;
+            margin-top: 10px;
+        }
+
+        .no-toxicity {
+            background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+            border-left: 4px solid var(--secondary-color);
+            padding: 12px 16px;
+            border-radius: 8px;
+            color: #2e7d32;
+            margin-top: 10px;
+        }
+
+        /* Source Badge */
+        .source-badge {
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .source-local {
+            background: var(--secondary-color);
+            color: white;
+        }
+
+        .source-chembl {
+            background: var(--accent-purple);
+            color: white;
+        }
+
+        /* Error Alert */
+        .alert-danger {
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(135deg, #ffebee, #ffcdd2);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-capsule-pill"></i>
+                MediMatch
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/"><i class="bi bi-search me-1"></i>Drug Search</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/visualize_kg"><i class="bi bi-diagram-3 me-1"></i>Knowledge Graph</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/target-prediction"><i class="bi bi-bullseye me-1"></i>Target Prediction</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/prescription-ocr"><i class="bi bi-camera me-1"></i>Prescription OCR</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/pharmacy-locator"><i class="bi bi-geo-alt me-1"></i>Pharmacy Locator</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/drug-copilot"><i class="bi bi-robot me-1"></i>AI Copilot</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container main-container">
+        <div class="glass-card p-4">
+            <!-- Header -->
+            <div class="text-center mb-4">
+                <h2 class="fw-bold text-dark">
+                    <i class="bi bi-capsule-pill text-primary me-2"></i>
+                    Drug Discovery & Comparison Platform
+                </h2>
+                <p class="text-muted">Search drugs from our database or ChEMBL, visualize molecules in 3D, and compare properties</p>
+            </div>
+
+            <!-- Tabs -->
+            <ul class="nav nav-tabs mb-4" id="mainTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="visualizer-tab" data-bs-toggle="tab" data-bs-target="#visualizer" type="button">
+                        <i class="bi bi-eye me-2"></i>Drug Visualizer
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="comparator-tab" data-bs-toggle="tab" data-bs-target="#comparator" type="button">
+                        <i class="bi bi-columns-gap me-2"></i>Drug Comparator
+                    </button>
+                </li>
+                <li class="nav-item ms-auto">
+                    <button class="btn btn-outline-primary btn-sm mt-1" onclick="openLibraryModal()">
+                        <i class="bi bi-bookmarks-fill me-1"></i>My Library
+                    </button>
+                </li>
+            </ul>
+
+            <!-- Tab Content -->
+            <div class="tab-content" id="mainTabContent">
+                <!-- Visualizer Tab -->
+                <div class="tab-pane fade show active" id="visualizer" role="tabpanel">
+                    <div class="row g-4">
+                        <!-- Search Section -->
+                        <div class="col-lg-5">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title mb-3"><i class="bi bi-search me-2 text-primary"></i>Search Drug</h5>
+                                    <div class="mb-3">
+                                        <label class="form-label">Select from database</label>
+                                        <select class="form-select" id="drug-select">
+                                            <option value="">-- Select Drug --</option>
+                                        </select>
+                                    </div>
+                                    <div class="text-center text-muted my-2">— OR —</div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Search by name or SMILES</label>
+                                        <input type="text" class="form-control" id="drug-search" placeholder="e.g., Aspirin or CC(=O)OC1=CC=CC=C1C(=O)O">
+                                    </div>
+                                    <button class="btn btn-primary w-100" onclick="loadMolecule()">
+                                        <i class="bi bi-search me-2"></i>Search & Visualize
+                                    </button>
+                                    <small class="text-muted d-block mt-2">
+                                        <i class="bi bi-info-circle me-1"></i>Not in database? We'll search ChEMBL automatically!
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3D Viewer -->
+                        <div class="col-lg-7">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title mb-3"><i class="bi bi-badge-3d me-2 text-primary"></i>3D Structure</h5>
+                                    <div id="molecule-viewer" class="molecule-viewer-container"></div>
+                                    <div class="d-flex justify-content-center align-items-center mt-2 gap-2">
+                                        <p id="main-molecule-name" class="fw-bold text-primary mb-0 fs-5"></p>
+                                        <button id="save-drug-btn" class="btn btn-sm btn-outline-danger rounded-circle d-none" style="width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center;" onclick="saveInternalDrug()" title="Save to Library">
+                                            <i class="bi bi-heart"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Properties Card (Initially Hidden) -->
+                        <div class="col-12" id="properties-card" style="display: none;">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-body">
+                                    <h5 class="card-title mb-3"><i class="bi bi-clipboard-data me-2 text-primary"></i>Drug Properties</h5>
+                                    <div id="properties-content"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comparator Tab -->
+                <div class="tab-pane fade" id="comparator" role="tabpanel">
+                    <!-- Drug Selection Row -->
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-5">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-body">
+                                    <h5 class="card-title text-primary"><i class="bi bi-1-circle me-2"></i>First Drug</h5>
+                                    <div class="mb-2">
+                                        <label class="form-label small">Select from database</label>
+                                        <select class="form-select" id="drug1-select">
+                                            <option value="">-- Select Drug 1 --</option>
+                                        </select>
+                                    </div>
+                                    <div class="text-center text-muted my-1 small">— OR —</div>
+                                    <div>
+                                        <label class="form-label small">Type drug name</label>
+                                        <input type="text" class="form-control" id="drug1-input" placeholder="e.g., Aspirin">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 d-flex align-items-center justify-content-center">
+                            <div class="text-center">
+                                <i class="bi bi-arrow-left-right fs-2 text-primary"></i>
+                                <p class="text-muted small mb-0">Compare</p>
+                            </div>
+                        </div>
+                        <div class="col-md-5">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-body">
+                                    <h5 class="card-title text-secondary"><i class="bi bi-2-circle me-2"></i>Second Drug</h5>
+                                    <div class="mb-2">
+                                        <label class="form-label small">Select from database</label>
+                                        <select class="form-select" id="drug2-select">
+                                            <option value="">-- Select Drug 2 --</option>
+                                        </select>
+                                    </div>
+                                    <div class="text-center text-muted my-1 small">— OR —</div>
+                                    <div>
+                                        <label class="form-label small">Type drug name</label>
+                                        <input type="text" class="form-control" id="drug2-input" placeholder="e.g., Ibuprofen">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-center mb-4">
+                        <button class="btn btn-primary btn-lg" onclick="compareDrugs()">
+                            <i class="bi bi-columns-gap me-2"></i>Compare Drugs
+                        </button>
+                        <small class="text-muted d-block mt-2">
+                            <i class="bi bi-info-circle me-1"></i>Not in database? We'll search ChEMBL, PubChem & DrugCentral!
+                        </small>
+                    </div>
+
+                    <!-- Comparison Results (Initially Hidden) -->
+                    <div id="comparison-results" style="display: none;">
+                        <!-- 3D Viewers Side by Side -->
+                        <div class="row g-4 mb-4">
+                            <div class="col-md-6">
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <h5 id="drug1-name" class="card-title text-primary text-center">Drug 1</h5>
+                                        <div id="molecule-viewer1" class="molecule-viewer-container"></div>
+                                        <p id="drug1-name-below" class="text-center mt-2 fw-bold"></p>
+                                        <div id="drug1-toxicity"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <h5 id="drug2-name" class="card-title text-secondary text-center">Drug 2</h5>
+                                        <div id="molecule-viewer2" class="molecule-viewer-container"></div>
+                                        <p id="drug2-name-below" class="text-center mt-2 fw-bold"></p>
+                                        <div id="drug2-toxicity"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Interaction Alert (Hidden by default) -->
+                        <div id="interaction-alert" class="alert alert-danger shadow-sm mb-4" style="display: none;">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-exclamation-triangle-fill fs-2 me-3"></i>
+                                <div>
+                                    <h5 class="fw-bold mb-1">Potential Interaction Detected</h5>
+                                    <ul id="interaction-list" class="mb-0 ps-3"></ul>
+                                </div>
+                            </div>
+                        </div>
+
+
+                        <!-- Sections Removed per User Request -->
+
+                        <!-- Radar Chart for Property Comparison -->
+                        <div class="card border-0 shadow-sm mb-4">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="bi bi-pie-chart me-2 text-primary"></i>Property Comparison Chart
+                                </h5>
+                                <div style="height: 350px; position: relative;">
+                                    <canvas id="comparison-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Side-by-Side Property Table -->
+                        <div class="card border-0 shadow-sm mb-4">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="bi bi-table me-2 text-success"></i>Detailed Property Comparison
+                                </h5>
+                                <div id="side-by-side-properties"></div>
+                            </div>
+                        </div>
+
+                        <!-- AI Summary -->
+                        <div class="card border-0 shadow-sm bg-light">
+                            <div class="card-body">
+                                <div id="comparison-summary"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Drug Comparator Tab -->
+                <div class="tab-pane fade" id="comparator" role="tabpanel">
+                    <div class="row g-4">
+                        <!-- Drug 1 Selection -->
+                        <div class="col-md-6">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-body">
+                                    <h5 class="card-title text-primary mb-3">
+                                        <i class="bi bi-capsule me-2"></i>Drug 1
+                                    </h5>
+                                    <div class="mb-3">
+                                        <label class="form-label">Select from database</label>
+                                        <select class="form-select" id="compare-drug1-select">
+                                            <option value="">-- Select Drug 1 --</option>
+                                        </select>
+                                    </div>
+                                    <div class="text-center text-muted my-2">— OR —</div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Search by name</label>
+                                        <input type="text" class="form-control" id="compare-drug1-search" placeholder="e.g., Aspirin">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Drug 2 Selection -->
+                        <div class="col-md-6">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-body">
+                                    <h5 class="card-title text-secondary mb-3">
+                                        <i class="bi bi-capsule me-2"></i>Drug 2
+                                    </h5>
+                                    <div class="mb-3">
+                                        <label class="form-label">Select from database</label>
+                                        <select class="form-select" id="compare-drug2-select">
+                                            <option value="">-- Select Drug 2 --</option>
+                                        </select>
+                                    </div>
+                                    <div class="text-center text-muted my-2">— OR —</div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Search by name</label>
+                                        <input type="text" class="form-control" id="compare-drug2-search" placeholder="e.g., Ibuprofen">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Compare Button -->
+                    <div class="text-center my-4">
+                        <button class="btn btn-primary btn-lg px-5" onclick="compareDrugsFromTab()">
+                            <i class="bi bi-arrows-angle-contract me-2"></i>Compare Drugs
+                        </button>
+                    </div>
+
+                    <!-- Comparison Results (Hidden initially) -->
+                    <div id="comparison-results" style="display: none;">
+                        <!-- Chart Container -->
+                        <div class="card border-0 shadow-sm mb-4">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="bi bi-bar-chart me-2 text-primary"></i>Property Comparison Chart
+                                </h5>
+                                <canvas id="comparison-chart" style="max-height: 400px;"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- 3D Molecular Viewers -->
+                        <div class="row g-4 mb-4">
+                            <div class="col-md-6">
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <h5 id="drug1-name" class="card-title text-primary text-center">Drug 1</h5>
+                                        <div id="molecule-viewer1" class="molecule-viewer-container"></div>
+                                        <p id="drug1-name-below" class="text-center mt-2 fw-bold"></p>
+                                        <div id="drug1-toxicity"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <h5 id="drug2-name" class="card-title text-secondary text-center">Drug 2</h5>
+                                        <div id="molecule-viewer2" class="molecule-viewer-container"></div>
+                                        <p id="drug2-name-below" class="text-center mt-2 fw-bold"></p>
+                                        <div id="drug2-toxicity"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Interaction Alert -->
+                        <div id="interaction-alert" class="alert alert-danger shadow-sm mb-4" style="display: none;">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-exclamation-triangle-fill fs-2 me-3"></i>
+                                <div>
+                                    <h5 class="fw-bold mb-1">Potential Interaction Detected</h5>
+                                    <ul id="interaction-list" class="mb-0 ps-3"></ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Side-by-Side Properties -->
+                        <div class="card border-0 shadow-sm mb-4">
+                            <div class="card-body">
+                                <h5 class="card-title mb-3">
+                                    <i class="bi bi-table me-2 text-primary"></i>Detailed Property Comparison
+                                </h5>
+                                <div id="side-by-side-properties"></div>
+                            </div>
+                        </div>
+
+                        <!-- Comparison Summary -->
+                        <div class="card border-0 shadow-sm bg-light">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="bi bi-journal-text me-2 text-primary"></i>Comparison Summary
+                                </h5>
+                                <div id="comparison-summary"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loading-spinner" class="position-fixed top-50 start-50 translate-middle" style="display: none; z-index: 9999;">
+        <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <!-- Library Modal -->
+    <div class="modal fade" id="libraryModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-bookmarks-fill text-primary me-2"></i>My Drug Library</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body bg-light">
+                    <div id="libraryLoading" class="text-center py-4 d-none">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <p class="mt-2 text-muted">Loading your library...</p>
+                    </div>
+                    <div id="libraryEmpty" class="text-center py-5 d-none">
+                        <i class="bi bi-journal-bookmark fs-1 text-muted opacity-50"></i>
+                        <p class="mt-3 text-muted">Your library is empty. Save drugs to access them quickly.</p>
+                    </div>
+                    <div id="libraryList" class="row g-3">
+                        <!-- Saved drugs will appear here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="/static/js/viewer.js?v=4"></script>
+</body>
+</html>
+

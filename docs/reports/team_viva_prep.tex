@@ -1,0 +1,131 @@
+\documentclass[a4paper,11pt]{report}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{hyperref}
+
+% Formatting
+\geometry{a4paper, margin=1in}
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\textbf{MediMatch Viva Notes}}
+\lhead{Internal Team Guide}
+\cfoot{\thepage}
+
+\title{\textbf{\Huge MediMatch AI+ \\ \LARGE Personalized Viva Preparation Guide}}
+\author{\textbf{Internal Confidential}}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+% =========================================================================================
+% CHAPTER 1: COMMON KNOWLEDGE
+% =========================================================================================
+\chapter{Project Master Overview (For Everyone)}
+\section{What is MediMatch AI+?}
+A web platform for drug discovery and analysis. It combines 3D visualization, Knowledge Graphs, and Generative AI to help researchers and students understand drugs better.
+
+\section{The Tech Stack}
+\begin{itemize}
+    \item \textbf{Frontend}: HTML, CSS (Bootstrap), JS (3Dmol.js, Chart.js).
+    \item \textbf{Backend}: Python Flask.
+    \item \textbf{DB}: SQLite + SQLAlchemy.
+    \item \textbf{AI}: Groq (Llama 3), Gemini Vision, FAISS (Vector DB).
+\end{itemize}
+
+\newpage
+
+% =========================================================================================
+% VIGNYATHA - FRONTEND
+% =========================================================================================
+\chapter{Y. Vignyatha Reddy (Frontend \& UI/UX Lead)}
+\textit{Focus: "I design the experience, the visuals, and the interactive web components."}
+
+\section{Your Key Technical Points}
+\begin{itemize}
+    \item \textbf{Jinja2 Templates}: "I architected the HTML structure using Flask's Jinja2 templating engine. This allows us to inject backend data (like drug names) directly into the HTML before it's sent to the browser."
+    \item \textbf{Glassmorphism}: "I implemented the Design System using CSS backdrop-filters and semi-transparent backgrounds to create a modern, 'glass-like' aesthetic that is consistent across all pages."
+    \item \textbf{Chart.js Integration}: "For the Radar Charts in the Drug Comparator, I wrote the JavaScript layer that initializes the canvas and dynamically updates the datasets when the user selects new drugs."
+\end{itemize}
+
+\section{Viva Questions for You}
+\textbf{Q: How do you make the visualization responsive?} \\
+\textit{A: "I used Bootstrap 5's grid system (Rows/Cols). For the complex charts and 3D viewers, I added CSS media queries to resize the canvas containers automatically on smaller screens (tablets)."}
+
+\textbf{Q: How does the Frontend get data without reloading?} \\
+\textit{A: "I built modular JavaScript functions using the Fetch API. When a user clicks 'Compare', my code sends an asynchronous request to the backend, waits for the JSON response, and then updates the DOM elements directly."}
+
+\newpage
+
+% =========================================================================================
+% CHARAN - OCR & MOBILE (NO RAG)
+% =========================================================================================
+\chapter{M. Venkata Charan (OCR Specialist \& Mobile Lead)}
+\textit{Focus: "I build the bridge between physical/mobile world and our server."}
+
+\section{Your Key Technical Points}
+\begin{itemize}
+    \item \textbf{Gemini Vision OCR}: "I integrated the Google Gemini 1.5 model for the Prescription Digitization. Unlike standard OCR, it uses a Generative approach—I send the prescription image with a prompt to 'output JSON', which handles handwriting much better than Tesseract."
+    \item \textbf{Mobile Auth}: "I implemented Header-Based Authentication for the mobile app. Since phones don't use session cookies like browsers, the app sends a Bearer Token which I validate on the backend."
+    \item \textbf{Target Prediction}: "I implemented the Fingerprint Similarity logic. We use Tanimoto coefficients to compare the chemical structure of a query drug against a database of known targets."
+\end{itemize}
+
+\section{Viva Questions for You}
+\textbf{Q: Why use Gemini Vision instead of Tesseract?} \\
+\textit{A: "Tesseract just gives unstructured text. Gemini Vision gives us structured JSON (Name, Dosage, Frequency) directly, which we can save to our database without complex parsing logic."}
+
+\textbf{Q: How does the mobile app talk to the Flask server?} \\
+\textit{A: "I enabled CORS (Cross-Origin Resource Sharing) on the API endpoints. This allows the Flask server to accept HTTP requests from the mobile application's origin."}
+
+\newpage
+
+% =========================================================================================
+% ANUDEEP - BACKEND & SECURITY
+% =========================================================================================
+\chapter{B. Sai Anudeep (Backend Architecture \& Security Lead)}
+\textit{Focus: "I build the server, the database, and ensure it is secure."}
+
+\section{Your Key Technical Points}
+\begin{itemize}
+    \item \textbf{Flask Architecture}: "I structured the `app.py` into a modular Flask application. I configured the route handlers and the application factory pattern to ensure clean separation of concerns."
+    \item \textbf{SQLAlchemy ORM}: "I designed the relational schema. For example, the `User` model is linked to `Prescriptions` and `SavedDrugs` via foreign keys, ensuring data integrity."
+    \item \textbf{Security}: "I implemented input sanitization to prevent SQL injection and configured Secure Session logic for user login management."
+\end{itemize}
+
+\section{Viva Questions for You}
+\textbf{Q: Why use ORM (SQLAlchemy) instead of raw SQL?} \\
+\textit{A: "It provides Database Agnosticism. We develop on SQLite for speed but can switch to PostgreSQL for production by changing one line of config. It also automatically handles escaping inputs, preventing SQL Injection."}
+
+\textbf{Q: How do you handle PDF generation?} \\
+\textit{A: "I integrated a server-side library (like ReportLab or WeasyPrint logic) that takes the HTML/Data of a prescription and renders it into a downloadable PDF binary stream for the user."}
+
+\newpage
+
+% =========================================================================================
+% PAVAN - RAG & DATA (RAG MOVED HERE)
+% =========================================================================================
+\chapter{K. Pavan (RAG Architect \& Data Lead)}
+\textit{Focus: "I build the AI Brain and the Data Ecosystem."}
+
+\section{Your Key Technical Points}
+\begin{itemize}
+    \item \textbf{RAG Pipeline}: "I implemented the Retrieval-Augmented Generation system. I built the `rag_engine.py` which uses FAISS (Vector Database) to retrieve relevant facts from our Knowledge Graph."
+    \item \textbf{Groq Integration}: "I integrated the Groq Llama 3 API. I feed the retrieved facts into the LLM context window to ground the AI's answers in reality, preventing hallucinations."
+    \item \textbf{Data Normalization}: "I built the pipeline to fetch and normalize drug data from ChEMBL and PubChem, ensuring apples-to-apples comparisons in the dashboard."
+\end{itemize}
+
+\section{Viva Questions for You}
+\textbf{Q: What is a Vector Database (FAISS)?} \\
+\textit{A: "It stores data as mathematical vectors (numbers). It allows us to search by 'meaning' (Semantic Search) rather than just keywords. So 'Heart Attack' matches 'Myocardial Infarction' because their vectors are close in space."}
+
+\textbf{Q: How do you prevent the AI from making things up?} \\
+\textit{A: "We use RAG. Before the AI answers, we force it to look at our verified internal data first. We instruct it via the System Prompt to ONLY use the provided context, minimizing hallucination."}
+
+\end{document}

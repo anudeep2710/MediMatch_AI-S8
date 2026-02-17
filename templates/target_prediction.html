@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediMatch - Target Prediction</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #009688;
+            --primary-dark: #00796B;
+            --secondary-color: #4CAF50;
+        }
+        body {
+            background: linear-gradient(135deg, #009688 0%, #00796B 50%, #004D40 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .navbar { background: rgba(0, 77, 64, 0.95) !important; backdrop-filter: blur(10px); }
+        .navbar-brand { font-weight: 700; font-size: 1.5rem; color: white !important; }
+        .nav-link { color: rgba(255, 255, 255, 0.85) !important; font-weight: 500; padding: 0.5rem 1rem !important; border-radius: 8px; }
+        .nav-link:hover, .nav-link.active { background: rgba(255, 255, 255, 0.15); color: white !important; }
+        .main-container { background: rgba(255, 255, 255, 0.95); border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); margin-top: 2rem; margin-bottom: 2rem; }
+        .btn-primary { background: linear-gradient(135deg, var(--primary-color), var(--primary-dark)); border: none; border-radius: 12px; }
+        .btn-primary:hover { background: linear-gradient(135deg, var(--primary-dark), #004D40); }
+        .form-control:focus, .form-select:focus { border-color: var(--primary-color); box-shadow: 0 0 0 0.25rem rgba(0, 150, 136, 0.25); }
+        .result-card { background: #f8f9fa; border-radius: 12px; border-left: 4px solid var(--primary-color); }
+        .similar-drug { background: linear-gradient(135deg, #e0f2f1, #b2dfdb); border-radius: 10px; padding: 15px; margin-bottom: 10px; }
+        .target-badge { background: var(--primary-color); color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/"><i class="bi bi-capsule-pill me-2"></i>MediMatch</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="/"><i class="bi bi-search me-1"></i>Drug Search</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/visualize_kg"><i class="bi bi-diagram-3 me-1"></i>Knowledge Graph</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/target-prediction"><i class="bi bi-bullseye me-1"></i>Target Prediction</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/prescription-ocr"><i class="bi bi-camera me-1"></i>Prescription OCR</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/pharmacy-locator"><i class="bi bi-geo-alt me-1"></i>Pharmacy Locator</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/drug-copilot"><i class="bi bi-robot me-1"></i>AI Copilot</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="main-container p-4">
+            <h2 class="mb-4"><i class="bi bi-bullseye text-primary me-2"></i>Target Prediction & Similar Drugs</h2>
+            <p class="text-muted mb-4">Select a drug from the database or enter a drug name to predict biological targets and find similar molecules.</p>
+
+            <form id="targetForm" class="row g-3 mb-4">
+                <div class="col-md-5">
+                    <label class="form-label">Select from Database</label>
+                    <select class="form-select" id="drugSelect">
+                        <option value="">-- Select a drug --</option>
+                    </select>
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label">Or Enter Drug Name</label>
+                    <input type="text" class="form-control" id="drugInput" placeholder="e.g., Ibuprofen, Paracetamol">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search me-2"></i>Predict</button>
+                </div>
+            </form>
+
+            <div id="loading" class="text-center py-4" style="display: none;">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-2 text-muted">Analyzing molecular structure...</p>
+            </div>
+
+            <div id="results" style="display: none;">
+                <!-- Drug Info -->
+                <div class="result-card p-4 mb-4">
+                    <h5><i class="bi bi-info-circle me-2"></i>Drug Information</h5>
+                    <div id="drugInfo" class="row mt-3"></div>
+                </div>
+
+                <!-- Predicted Targets -->
+                <div class="result-card p-4 mb-4">
+                    <h5><i class="bi bi-bullseye me-2"></i>Predicted Biological Targets</h5>
+                    <div id="predictedTargets" class="mt-3"></div>
+                </div>
+
+                <!-- Similar Drugs -->
+                <div class="result-card p-4">
+                    <h5><i class="bi bi-diagram-2 me-2"></i>Similar Molecules</h5>
+                    <div id="similarDrugs" class="mt-3"></div>
+                </div>
+            </div>
+
+            <div id="error" class="alert alert-danger" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Load drugs for dropdown on page load
+        async function loadDrugList() {
+            try {
+                const response = await fetch('/api/drugs');
+                const drugs = await response.json();
+                const select = document.getElementById('drugSelect');
+                drugs.forEach(drug => {
+                    const option = document.createElement('option');
+                    option.value = drug;
+                    option.textContent = drug;
+                    select.appendChild(option);
+                });
+            } catch (err) {
+                console.error('Failed to load drug list:', err);
+            }
+        }
+
+        // Load drug list when page loads
+        document.addEventListener('DOMContentLoaded', loadDrugList);
+
+        // Clear text input when dropdown is selected and vice versa
+        document.getElementById('drugSelect').addEventListener('change', function() {
+            if (this.value) {
+                document.getElementById('drugInput').value = '';
+            }
+        });
+
+        document.getElementById('drugInput').addEventListener('input', function() {
+            if (this.value.trim()) {
+                document.getElementById('drugSelect').value = '';
+            }
+        });
+
+        document.getElementById('targetForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // Get input from dropdown or text field
+            const selectValue = document.getElementById('drugSelect').value;
+            const textValue = document.getElementById('drugInput').value.trim();
+            const input = selectValue || textValue;
+
+            if (!input) {
+                document.getElementById('error').textContent = 'Please select a drug from dropdown or enter a drug name.';
+                document.getElementById('error').style.display = 'block';
+                return;
+            }
+
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('error').style.display = 'none';
+
+            try {
+                // Always send as drug_name - the backend will handle it
+                const payload = { drug_name: input };
+
+                const response = await fetch('/api/predict_target', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+
+                if (data.error) {
+                    document.getElementById('error').textContent = data.error;
+                    document.getElementById('error').style.display = 'block';
+                } else {
+                    displayResults(data, input);
+                    document.getElementById('results').style.display = 'block';
+                }
+            } catch (err) {
+                document.getElementById('error').textContent = 'Failed to fetch predictions. Please try again.';
+                document.getElementById('error').style.display = 'block';
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        });
+
+        function displayResults(data, queryInput) {
+            // Drug Info - use first predicted target info or query
+            const firstTarget = data.predicted_targets?.[0] || {};
+            document.getElementById('drugInfo').innerHTML = `
+                <div class="col-md-4"><strong>Drug:</strong> ${queryInput}</div>
+                <div class="col-md-4"><strong>Primary Target:</strong> ${firstTarget.target || 'N/A'}</div>
+                <div class="col-md-4"><strong>Mechanism:</strong> ${firstTarget.mechanism_of_action || 'N/A'}</div>
+            `;
+
+            // Targets - display as detailed cards
+            const targets = data.predicted_targets || [];
+            document.getElementById('predictedTargets').innerHTML = targets.length > 0
+                ? targets.map(t => `
+                    <div class="d-inline-block me-2 mb-2">
+                        <span class="target-badge">${t.target || 'Unknown'}</span>
+                        <small class="text-muted ms-1">(${(t.confidence * 100).toFixed(0)}%)</small>
+                    </div>
+                `).join('')
+                : '<p class="text-muted">No targets predicted</p>';
+
+            // Similar Drugs - use similar_drugs from API response
+            const similar = data.similar_drugs || [];
+            document.getElementById('similarDrugs').innerHTML = similar.length > 0
+                ? similar.map(d => `
+                    <div class="similar-drug">
+                        <strong>${d.drug_name}</strong>
+                        <span class="float-end badge bg-secondary">Similarity: ${(d.similarity * 100).toFixed(1)}%</span>
+                        <div class="small text-muted mt-1">Target: ${d.target || 'Unknown'}</div>
+                        <div class="small text-muted">${d.justification || ''}</div>
+                    </div>
+                `).join('')
+                : '<p class="text-muted">No similar molecules found</p>';
+        }
+    </script>
+</body>
+</html>
+

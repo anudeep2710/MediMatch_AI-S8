@@ -1,0 +1,268 @@
+\documentclass[a4paper,12pt]{report}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{tabularx}
+\usepackage{enumitem}
+
+% =========================================================================================
+% CONFIGURATION
+% =========================================================================================
+
+% Page Margins
+\geometry{a4paper, margin=1in}
+
+% Header/Footer
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\textbf{MediMatch AI+ Final Report}}
+\lhead{\leftmark}
+\cfoot{\thepage}
+
+% Code Listing Style
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+\lstset{style=mystyle}
+
+% =========================================================================================
+% TITLE PAGE
+% =========================================================================================
+\title{
+    \textbf{\Huge MediMatch AI+} \\ 
+    \LARGE The Ultimate Technical Report \\
+    \vspace{0.5cm}
+    \large Project Overview, Contributions, Implementation \& Viva Guide
+}
+\author{
+    \textbf{Team MediMatch} \\
+    Y. Vignyatha Reddy (Frontend Lead) \\
+    M. Venkata Charan (OCR \& Mobile Lead) \\
+    B. Sai Anudeep (Backend \& Security Lead) \\
+    K. Pavan (RAG \& Data Lead)
+}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+% =========================================================================================
+% PART 1: PROJECT OVERVIEW
+% =========================================================================================
+\part{Project Overview}
+
+\chapter{Project Abstract}
+\textbf{MediMatch AI+} is an integrated drug discovery and analysis platform designed to bridge the gap between complex biomedical datasets and actionable insights. By unifying 3D Molecular Visualization, Knowledge Graphs (PharmaSage), and Generative AI (RAG Copilot) into a single web interface, it empowers researchers and students to explore drug interactions, properties, and relationships intuitively.
+
+\section{Key Innovations}
+\begin{itemize}
+    \item \textbf{AI Drug Copilot}: A conversational agent grounded in verified scientific facts using Retrieval-Augmented Generation (RAG).
+    \item \textbf{Generative OCR}: A prescription digitization tool that uses Computer Vision to understand handwriting.
+    \item \textbf{Interactive Analytics}: Real-time radar charts and molecular rendering for comparative analysis.
+    \item \textbf{Personalization}: A "My Library" feature allowing users to bookmark drugs and set medication reminders.
+\end{itemize}
+
+\section{System Architecture}
+The application uses a \textbf{Flask (Python)} backend with a \textbf{SQLite} database for structured data storage. The frontend is built with \textbf{HTML5/Bootstrap} and vanilla JavaScript. Key external integrations include ChEMBL, PubChem, Groq (Llama 3), and Google Gemini APIs.
+
+\newpage
+
+% =========================================================================================
+% PART 2: INDIVIDUAL CONTRIBUTIONS
+% =========================================================================================
+\part{Team Contributions \& Roles}
+
+\chapter{Work Allocation}
+
+\section{1. Y. Vignyatha Reddy (Frontend \& UI/UX)}
+\textbf{Responsibility}: Visual Architecture, Interactive Components, Dashboard Design.
+\begin{itemize}
+    \item Implemented the Global Design System (Glassmorphism).
+    \item Developed the 3D Molecular Viewer logic using \textbf{3Dmol.js}.
+    \item Built the Drug Comparison Radar Charts using \textbf{Chart.js}.
+\end{itemize}
+
+\section{2. M. Venkata Charan (OCR \& Mobile)}
+\textbf{Responsibility}: Intelligent Perception, Mobile Connectivity.
+\begin{itemize}
+    \item Integrated \textbf{Google Gemini Vision} for handwritten prescription digitization.
+    \item Configured \textbf{CORS} and Header-Based Authentication for the mobile app.
+    \item implemented Target Prediction algorithms (Tanimoto Similarity).
+\end{itemize}
+
+\section{3. B. Sai Anudeep (Backend \& Security)}
+\textbf{Responsibility}: Server Infrastructure, Database Integrity.
+\begin{itemize}
+    \item Architected the Flask `app.py` and route blueprinting.
+    \item Designed the \textbf{SQLAlchemy ORM} schema (`User`, `Prescription` tables).
+    \item Implemented PDF Generation services for prescription export.
+\end{itemize}
+
+\section{4. K. Pavan (RAG \& Data)}
+\textbf{Responsibility}: Artificial Intelligence, Data Ecosystem.
+\begin{itemize}
+    \item Built the \textbf{RAG Pipeline} using FAISS and Groq (Llama 3).
+    \item Managed integrations with ChEMBL/PubChem APIs and Data Normalization.
+    \item Implemented the \textbf{Pharmacy Locator} using OpenStreetMap.
+\end{itemize}
+
+\newpage
+
+% =========================================================================================
+% PART 3: DETAILED TECHNICAL IMPLEMENTATION
+% =========================================================================================
+\part{Detailed Technical Implementation}
+
+% =========================================================================================
+% MODULE 1: FRONTEND
+% =========================================================================================
+\chapter{Module 1: Frontend Engineering (Vignyatha)}
+
+\section{Theory: Asynchronous Rendering}
+The frontend utilizes the \textbf{AJAX (Asynchronous JavaScript and XML)} pattern. Instead of full page reloads, the browser fetches data in the background and updates the DOM using the JavaScript Event Loop.
+
+\section{Code: 3D Visualization}
+\begin{lstlisting}[language=JavaScript, caption=3Dmol.js Logic]
+function renderMolecule(viewer, mol3d) {
+    viewer.clear(); // Clear WebGL context
+    viewer.addModel(mol3d, "sdf"); // Parse SDF data
+    // Use 'Stick' style for clarity
+    viewer.setStyle({}, {stick: {radius: 0.2, colorscheme: "Jmol"}});
+    viewer.render(); // Draw to Canvas
+}
+\end{lstlisting}
+\textbf{Significance}: This enables students to visualize spatial isomerism directly in the browser without installing heavy software like PyMOL.
+
+% =========================================================================================
+% MODULE 2: INTELLIGENT OCR
+% =========================================================================================
+\chapter{Module 2: Generative OCR (Charan)}
+
+\section{Theory: Visual Question Answering (VQA)}
+We treat OCR as a VQA task ($A = M(I, Q)$). By prompting the Gemini model ($M$) with the image ($I$) and the query "Extract JSON" ($Q$), we get structured data instead of raw text.
+
+\section{Code: Vision Pipeline}
+\begin{lstlisting}[language=Python, caption=Gemini VQA Integration]
+model = genai.GenerativeModel('gemini-1.5-flash')
+prompt = "Extract medication names as JSON: [{'name': '...', 'dosage': '...'}]"
+response = model.generate_content([prompt, img_file])
+data = json.loads(response.text) # Structured Extraction
+\end{lstlisting}
+\textbf{Significance}: Reduces medication errors by automatically digitizing handwritten notes into a queryable database structure.
+
+% =========================================================================================
+% MODULE 3: BACKEND ARCHITECTURE
+% =========================================================================================
+\chapter{Module 3: Secure Backend (Anudeep)}
+
+\section{Theory: ORM & ACID Transactions}
+We use \textbf{SQLAlchemy} to map Python Objects to Relational Tables. This ensures Database Agnosticism (switch between SQLite/Postgres easily) and facilitates Atomic transactions.
+
+\section{Code: Database Models}
+\begin{lstlisting}[language=Python, caption=SQLAlchemy Models]
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    # Lazy Loading prevents fetching all history at once
+    prescriptions = db.relationship('Prescription', lazy=True)
+
+class Prescription(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    owner_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+\end{lstlisting}
+\textbf{Significance}: Provides a scalable foundation that maintains Data Integrity even under load, ensuring user medical history is never corrupted.
+
+% =========================================================================================
+% MODULE 4: RAG SYSTEM
+% =========================================================================================
+\chapter{Module 4: RAG Artificial Intelligence (Pavan)}
+
+\section{Theory: Vector Space Models}
+Knowledge is represented as vectors. Semantic similarity is computed using \textbf{Cosine Similarity}:
+$$ \text{similarity}(A, B) = \frac{A \cdot B}{||A|| ||B||} $$
+This allows the system to find "Heart Attack" when the knowledge graph says "Myocardial Infarction".
+
+\section{Code: Vector Retrieval}
+\begin{lstlisting}[language=Python, caption=FAISS Search]
+embedder = SentenceTransformer("all-MiniLM-L6-v2")
+# Encode query to vector space
+query_vec = embedder.encode([user_query])
+# Find nearest semantic neighbors in Knowledge Graph
+distances, indices = faiss_index.search(query_vec, k=5)
+# Inject facts into LLM context
+context = [metadata[i] for i in indices[0]]
+\end{lstlisting}
+\textbf{Significance}: Prevents LLM Hallucinations. The chatbot answers are grounded in the verified PharmaSage dataset, critical for medical safety.
+
+\newpage
+
+% =========================================================================================
+% PART 4: VIVA PREPARATION
+% =========================================================================================
+\part{Viva Preparation Guide}
+
+\chapter{Personalized Q\&A}
+
+\section{For Vignyatha (Frontend)}
+\textbf{Q: Why use Vanilla JS instead of React?} \\
+\textit{A: "It reduces build complexity. For this prototype, integrating directly with Flask templates (Jinja2) provided faster iteration than managing a separate React build pipeline."}
+
+\section{For Charan (OCR)}
+\textbf{Q: How do you handle mobile authentication?} \\
+\textit{A: "I implemented Header-Based Authentication. Mobile apps are stateless, so we pass a Bearer Token in the HTTP headers which the server validates against the User DB."}
+
+\section{For Anudeep (Backend)}
+\textbf{Q: What is the benefit of Lazy Loading in SQLAlchemy?} \\
+\textit{A: "It optimizes memory usage. We don't load a user's entire prescription history until it is strictly requested, reducing the overhead for simple login operations."}
+
+\section{For Pavan (RAG)}
+\textbf{Q: Why use RAG instead of fine-tuning?} \\
+\textit{A: "Fine-tuning locks knowledge in time. RAG allows us to update our Knowledge Graph (CSV/Database) instantly, and the AI immediately reflects the new information without training."}
+
+\newpage
+
+% =========================================================================================
+% PART 5: MEETING NOTES
+% =========================================================================================
+\part{Meeting Log}
+
+\chapter{Development Timeline}
+
+\section{Kickoff (01-15)}
+\textbf{Agenda}: defined Architecture. Assigned Pavan to RAG and Anudeep to Backend. Defined Glassmorphism UI style.
+
+\section{Mid-Review (01-20)}
+\textbf{Agenda}: OCR Integration. Charan demonstrated Gemini Vision. Decided to switch from Tesseract to Gemini for better handwriting support.
+
+\section{Final Polish (01-27)}
+\textbf{Agenda}: Bug Fixes. Fixed Groq Model deprecated error (updated to Llama 3.3). Finalized Documentation.
+
+\end{document}

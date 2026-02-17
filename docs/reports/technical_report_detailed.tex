@@ -1,0 +1,218 @@
+\documentclass[a4paper,12pt]{report}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{amsmath}
+
+% Page Setup
+\geometry{a4paper, margin=1in}
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\textbf{MediMatch AI+ Technical Report}}
+\lhead{\leftmark}
+\cfoot{\thepage}
+
+% Code Listing Configuration
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+
+\lstset{style=mystyle}
+
+\title{\textbf{\Huge MediMatch AI+ \\ \LARGE Detailed Technical Implementation Report}}
+\author{\textbf{Team MediMatch}}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+% =========================================================================================
+% VIGNYATHA - FRONTEND
+% =========================================================================================
+\chapter{Module 1: Frontend Engineering \& Visualization}
+\textbf{Lead Developer:} Y. Vignyatha Reddy
+
+\section{Developed Feature: Interactive Drug Dashboard}
+The primary contribution is the development of a \textbf{Single Page Application (SPA)-like interface} that integrates complex 3D rendering and statistical analysis without compromising page load performance.
+
+\section{Significance}
+In drug discovery, static images fail to convey the spatial complexity of molecules. This module democratizes high-end molecular analysis, allowing students and researchers to manipulate chemical structures in real-time directly in a web browser, removing the need for expensive desktop software like PyMOL.
+
+\section{Theoretical Foundation}
+\subsection{WebGL & Canvas Rendering}
+The module utilizes the HTML5 `<canvas>` element and WebGL context to render vector graphics.
+\begin{itemize}
+    \item \textbf{Matrix Transformations}: 3D rendering involves multiplying coordinate vectors by projection matrices (Model-View-Projection) to map 3D space ($\mathbb{R}^3$) to the 2D screen ($\mathbb{R}^2$).
+    \item \textbf{Asynchronous State Management}: Uses the JavaScript Event Loop to handle heavy rendering tasks without blocking the UI thread.
+\end{itemize}
+
+\section{Code Implementation}
+\begin{lstlisting}[language=JavaScript, caption=3Dmol.js Initialization Logic]
+// viewer.js - Core Rendering Logic
+function renderMolecule(viewer, mol3d, elementId) {
+    // 1. Clear WebGL context to prevent artifacting
+    viewer.clear();
+    
+    // 2. Add Model: SDF format contains atom coordinates (x,y,z)
+    viewer.addModel(mol3d, "sdf");
+    
+    // 3. Style Application: 'Stick' representation highlights bond angles
+    viewer.setStyle({}, {stick: {radius: 0.2, colorscheme: "Jmol"}});
+    
+    // 4. Render and Center Camera
+    viewer.zoomTo();
+    viewer.render();
+}
+\end{lstlisting}
+\textbf{Explanation:} Line 10 handles the visual translation of chemical data. The "Jmol" colorscheme is a standard scientific mapping (Oxygen=Red, Nitrogen=Blue), ensuring the visualization is immediately intuitive to domain experts.
+
+\newpage
+
+% =========================================================================================
+% CHARAN - OCR & MOBILE
+% =========================================================================================
+\chapter{Module 2: Intelligent OCR & Mobile Integration}
+\textbf{Lead Developer:} M. Venkata Charan
+
+\section{Developed Feature: Generative Prescription Digitizer}
+This feature creates a bridge between physical paper prescriptions and digital records. Unlike traditional OCR, it uses \textbf{Generative Vision} to extract structured entities (Drug Name, Dosage, Frequency) from handwritten documents.
+
+\section{Significance}
+Digitizing medical records reduces human error in pharmacy dispensing. By automating the extraction process with high accuracy, this module prevents medication errors caused by illegible handwriting, a major cause of adverse drug events.
+
+\section{Theoretical Foundation}
+\subsection{Visual Question Answering (VQA)}
+We leverage the VQA paradigm where the model $M$ takes an image $I$ and a text prompt $Q$:
+$$ A = M(I, Q) $$
+Here, $Q$ is "Extract medication details as JSON". This is superior to standard OCR ($T = M(I)$) because it adds semantic understanding to the extraction process.
+
+\section{Code Implementation}
+\begin{lstlisting}[language=Python, caption=Gemini Vision Integration]
+# prescription_routes.py
+def analyze_prescription_image(image_path):
+    # 1. Initialize Generative Vision Model
+    model = genai.GenerativeModel('gemini-1.5-flash')
+    
+    # 2. Define Structured Prompt for JSON Output
+    prompt = """
+    Analyze this prescription. Return a JSON array:
+    [{"medication": "Name", "dosage": "500mg", "frequency": "BID"}]
+    Do not return markdown. Return RAW JSON only.
+    """
+    
+    # 3. Inference
+    response = model.generate_content([prompt, img_file])
+    return json.loads(response.text)
+\end{lstlisting}
+\textbf{Explanation:} The prompt engineering in lines 7-9 is critical. By instructing the model to return "RAW JSON", we bypass complex parsing regexes and get data that can be directly inserted into our SQL database.
+
+\newpage
+
+% =========================================================================================
+% ANUDEEP - BACKEND
+% =========================================================================================
+\chapter{Module 3: Backend Architecture \& Security}
+\textbf{Lead Developer:} B. Sai Anudeep
+
+\section{Developed Feature: Secure Scalable Infrastructure}
+The core contribution is the robust state management system handling user authentication, session security, and database transactions for the entire platform.
+
+\section{Significance}
+Medical applications require strict data integrity. The architecture ensures ACID (Atomicity, Consistency, Isolation, Durability) properties for all transactions. If a prescription save fails halfway, the entire transaction rolls back, preventing data corruption.
+
+\section{Theoretical Foundation}
+\subsection{RESTful Architecture}
+The backend adheres to \textbf{REpresentational State Transfer}:
+\begin{itemize}
+    \item \textbf{Statelessness}: Each HTTP request contains all context (JWT/Cookie), allowing horizontal scaling.
+    \item \textbf{Resource Identification}: URIs identify resources (`/api/drug/aspirin`), not actions.
+\end{itemize}
+
+\section{Code Implementation}
+\begin{lstlisting}[language=Python, caption=SQLAlchemy Relational Models]
+# models.py - Database Schema
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(150), unique=True)
+    # Lazy Loading: Performance Optimization
+    prescriptions = db.relationship('Prescription', backref='owner', lazy=True)
+
+class Prescription(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    # Foreign Key enforces Referential Integrity
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    data = db.Column(db.JSON)  # Storing structured OCR output
+\end{lstlisting}
+\textbf{Explanation:} Line 6 (`lazy=True`) implements the "Lazy Loading" pattern. When fetching a User, we do NOT load their 1,000 prescriptions into memory essentially. We only fetch them when `.prescriptions` is accessed, optimizing Response Time (TTFB).
+
+\newpage
+
+% =========================================================================================
+% PAVAN - RAG & DATA
+% =========================================================================================
+\chapter{Module 4: RAG & Knowledge Graph Engine}
+\textbf{Lead Developer:} K. Pavan
+
+\section{Developed Feature: Retrieval-Augmented Generation (RAG) System}
+This module implements the "Brain" of the AI Copilot. It combines a \textbf{Vector Database (FAISS)} with a \textbf{Knowledge Graph (PharmaSage)} to ground the Large Language Model's responses in verified scientific facts.
+
+\section{Significance}
+Standard LLMs hallucinate (invent facts). In healthcare, this is dangerous. This RAG system ensures that when the AI answers a question about "Metformin", it has retrieved the actual "Mechanism of Action" triples from our curated database first, achieving \textbf{Factuality and Traceability}.
+
+\section{Theoretical Foundation}
+\subsection{Vector Space Algebra}
+Text is converted into high-dimensional vectors ($v \in \mathbb{R}^{384}$). Semantic similarity is computed using \textbf{Cosine Similarity}:
+$$ \text{similarity}(A, B) = \frac{A \cdot B}{||A|| ||B||} $$
+This allows the system to understand that "Heart Attack" and "Myocardial Infarction" are synonyms (their vector angle $\theta \approx 0$).
+
+\section{Code Implementation}
+\begin{lstlisting}[language=Python, caption=RAG Retrieval Engine]
+# rag_engine.py
+from sentence_transformers import SentenceTransformer
+import faiss
+
+# 1. Embedding Model
+embedder = SentenceTransformer("all-MiniLM-L6-v2")
+
+def retrieve_knowledge(query, index, k=3):
+    # 2. Encode Query to Vector
+    query_vec = embedder.encode([query])
+    
+    # 3. Nearest Neighbor Search (L2 Distance / Inner Product)
+    distances, indices = index.search(query_vec, k)
+    
+    # 4. Context Extraction
+    context_triples = [metadata[i] for i in indices[0]]
+    return "\n".join(context_triples)
+\end{lstlisting}
+\textbf{Explanation:} Line 13 executes the similarity search. Unlike SQL keyword search ($O(N)$), FAISS uses Hierarchical Navigable Small World (HNSW) graphs to find nearest neighbors in $O(\log N)$ time, enabling real-time chat with a database of millions of facts.
+
+\end{document}

@@ -1,0 +1,120 @@
+/* ==============================================
+   MediMatch Global Navbar Styles
+   ============================================== */
+
+:root {
+    --primary-color: #009688;
+    --primary-dark: #00796B;
+    --accent-color: #26A69A;
+}
+
+/* Glassmorphism Navbar */
+.navbar {
+    background: rgba(0, 43, 36, 0.8) !important;
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 1rem 0;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.navbar-brand {
+    font-weight: 800;
+    font-size: 1.5rem;
+    letter-spacing: -0.5px;
+    color: #fff !important;
+    transition: all 0.3s ease;
+}
+
+.navbar-brand:hover {
+    transform: scale(1.05);
+    color: #26A69A !important;
+}
+
+.navbar-brand i {
+    font-size: 1.75rem;
+}
+
+/* Navbar Links */
+.nav-link {
+    color: rgba(255, 255, 255, 0.85) !important;
+    font-weight: 500;
+    font-size: 0.95rem;
+    padding: 0.5rem 1rem !important;
+    border-radius: 8px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+
+.nav-link i {
+    transition: transform 0.3s ease;
+}
+
+.nav-link:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: white !important;
+    transform: translateY(-2px);
+}
+
+.nav-link:hover i {
+    transform: scale(1.2);
+}
+
+.nav-link.active {
+    background: rgba(255, 255, 255, 0.2);
+    color: white !important;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(255, 255, 255, 0.2);
+}
+
+.nav-link.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 30px;
+    height: 3px;
+    background: #26A69A;
+    border-radius: 2px 2px 0 0;
+}
+
+/* Navbar Toggler (Mobile) */
+.navbar-toggler {
+    border-color: rgba(255, 255, 255, 0.3);
+    padding: 0.5rem;
+}
+
+.navbar-toggler:focus {
+    box-shadow: 0 0 0 0.2rem rgba(38, 166, 154, 0.5);
+}
+
+.navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(255, 255, 255, 0.85)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+/* Mobile Menu */
+@media (max-width: 991.98px) {
+    .navbar-collapse {
+        background: rgba(0, 43, 36, 0.95);
+        margin-top: 1rem;
+        padding: 1rem;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .nav-link {
+        margin: 0.25rem 0;
+    }
+    
+    .nav-link.active::after {
+        display: none;
+    }
+}
+
+/* Desktop Spacing */
+@media (min-width: 992px) {
+    .navbar-nav .nav-item {
+        margin: 0 0.25rem;
+    }
+}

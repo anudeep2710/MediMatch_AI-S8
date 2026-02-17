@@ -1,0 +1,119 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{tabularx}
+\usepackage{enumitem}
+
+\geometry{
+    a4paper,
+    total={170mm,257mm},
+    left=20mm,
+    top=20mm,
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{MediMatch AI+ Documentation}
+\lhead{Meeting Notes \& Project Summary}
+\cfoot{\thepage}
+
+\title{\textbf{MediMatch AI+: Project Summary \& Meeting Notes}}
+\author{\textbf{Team MediMatch}}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+\newpage
+
+\section{Complete Project Overview}
+
+\subsection{Project Abstract}
+\textbf{MediMatch AI+} is an advanced, web-based platform designed to revolutionize the initial stages of drug discovery and analysis. By bridging the gap between vast biomedical datasets and actionable insights, it empowers researchers, pharmacists, and students with tools for drug visualization, interaction analysis, and knowledge retrieval. 
+
+The project leverages cutting-edge technologies including \textbf{Generative AI (LLMs)} for query processing, \textbf{Retrieval-Augmented Generation (RAG)} for fact-based grounding, and \textbf{Computer Vision} for prescription digitization. Unlike static databases, MediMatch offers a dynamic, personalized experience with a "My Library" feature and mobile synchronization for medication adherence.
+
+\subsection{Key Features}
+\begin{itemize}
+    \item \textbf{AI Drug Copilot}: A conversational agent powered by Groq (Llama 3) and a vector-based knowledge graph (FAISS) to answer complex biomedical queries with high accuracy.
+    \item \textbf{Drug Comparator}: A visual analytics tool utilizing Radar Charts and 3D molecular rendering (3Dmol.js) to compare drug efficacy, toxicity, and binding affinity side-by-side.
+    \item \textbf{Prescription OCR}: An automated pipeline using Gemini Vision to extract medication details from physical prescription images and store them in a digital history.
+    \item \textbf{Personalized Library}: A user-centric dashboard enabling users to bookmark drugs, set medication reminders, and sync data across devices via a RESTful API.
+    \item \textbf{Knowledge Graph Visualization}: An interactive network graph (PyVis) exploring relationships between drugs, targets, and diseases.
+\end{itemize}
+
+\subsection{System Architecture}
+The application uses a \textbf{Flask (Python)} backend with a \textbf{SQLite} database for structured data storage. The frontend is built with \textbf{HTML5/Bootstrap} and vanilla JavaScript for a lightweight, responsive user experience. Key external integrations include ChEMBL, PubChem, RxNorm, and Google Gemini APIs.
+
+\newpage
+
+\section{Team Meeting Notes}
+
+\subsection*{Meeting 1: Phase II Kickoff \& Architecture Design}
+\textbf{Date:} 2026-01-15 \\
+\textbf{Attendees:} All Team Members \\
+\textbf{Agenda:} Define Phase II roadmap, database selection, and API structure.
+
+\subsubsection*{Discussion Points:}
+\begin{itemize}
+    \item \textbf{Database Strategy:} Decided to transition from a stateless prototype to a stateful application using SQLite + SQLAlchemy. This supports the new "History" and "Library" features without the complexity of a full Postgres setup for the prototype.
+    \item \textbf{Mobile Integration:} Discussed the need for the Web Backend to serve the Mobile App. Agreed to implement CORS and Header-based authentication (Firebase UID compatibility).
+    \item \textbf{Task Allocation:}
+    \begin{itemize}
+        \item \textit{Member 1}: Database models and Auth middleware.
+        \item \textit{Member 2}: Mobile API endpoints and History logic.
+        \item \textit{Member 3}: RAG pipeline research and Comparator UI design.
+    \end{itemize}
+\end{itemize}
+\textbf{Outcome:} Architecture diagram finalized; repository structure updated for serialization.
+
+\hrulefill
+
+\subsection*{Meeting 2: Personalization & OCR Integration}
+\textbf{Date:} 2026-01-20 \\
+\textbf{Attendees:} All Team Members \\
+\textbf{Agenda:} Review "My Library" implementation and Prescription OCR pipeline.
+
+\subsubsection*{Discussion Points:}
+\begin{itemize}
+    \item \textbf{Library Feature:} Demoed the "Save" functionality. Code review highlighted the need for duplicate checking (preventing saving the same drug twice), which was added to the `save_drug` endpoint.
+    \item \textbf{OCR Pipeline:} The Gemini Vision integration is working, but response times were slow. Decided to optimize the prompt to return JSON strictly to reduce parsing errors.
+    \item \textbf{Frontend:} The "My Library" modal needed styling work to match the glassmorphism theme.
+\end{itemize}
+\textbf{Outcome:} "My Library" feature merged; OCR prompt optimized for JSON output.
+
+\hrulefill
+
+\subsection*{Meeting 3: Advanced Intelligence (RAG & Comparison)}
+\textbf{Date:} 2026-01-24 \\
+\textbf{Attendees:} All Team Members \\
+\textbf{Agenda:} Integration of RAG system and troubleshooting Drug Comparison.
+
+\subsubsection*{Discussion Points:}
+\begin{itemize}
+    \item \textbf{RAG Issues:} The initial FAISS index loading was causing memory spikes. Refactored the loading logic to occur only on startup (singleton pattern) rather than per request.
+    \item \textbf{Comparison Logic:} The "Comparison" feature was failing when local data was missing. Implemented a fallback mechanism to fetch data from ChEMBL/PubChem in real-time if the local CSV search fails.
+    \item \textbf{Visuals:} Agreed to use Chart.js for the Radar chart as it provides better interactivity than static Matplotlib images.
+\end{itemize}
+\textbf{Outcome:} RAG pipeline stabilized; Comparison API upgraded with fallback logic.
+
+\hrulefill
+
+\subsection*{Meeting 4: Final Polish & Evaluation Prep}
+\textbf{Date:} 2026-01-27 \\
+\textbf{Attendees:} All Team Members \\
+\textbf{Agenda:} Final bug fixes, documentation, and code freeze.
+
+\subsubsection*{Discussion Points:}
+\begin{itemize}
+    \item \textbf{Bug Fixes:} Resolved the `NameError` in the drug comparator and the route conflict for `drug_copilot`. Fixed the decommissioned Groq model error by switching to `llama-3.3`.
+    \item \textbf{Documentation:} Reviewed the `contribution_report.tex`. All members successfully mapped their code to the design principles.
+    \item \textbf{Demo Prep:} Verified all user flows: Login $\rightarrow$ Search $\rightarrow$ Save $\rightarrow$ Compare $\rightarrow$ Ask AI.
+\end{itemize}
+\textbf{Outcome:} Project marked as \textbf{Complete}. Ready for submission/evaluation.
+
+\end{document}

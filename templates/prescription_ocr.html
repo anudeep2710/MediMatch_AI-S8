@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prescription OCR - MediMatch</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <!-- Global Styles -->
+    <link href="/static/css/global.css" rel="stylesheet">
+    <link href="/static/css/navbar.css" rel="stylesheet">
+    
+    <style>
+        /* Page-specific styles */
+        .upload-zone {
+            border: 2px dashed #b2dfdb;
+            background: #f8fbfb;
+            border-radius: 16px;
+            padding: 40px 20px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+
+        .upload-zone:hover {
+            border-color: var(--primary-color);
+            background: #e0f2f1;
+            transform: translateY(-2px);
+        }
+
+        .upload-zone.dragover {
+            border-color: var(--primary-color);
+            background-color: #b2dfdb;
+            transform: scale(1.02);
+        }
+
+        .medicine-item {
+            background: white;
+            border-radius: 15px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            border-left: 5px solid var(--primary-color);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+        }
+
+        .medicine-item:hover {
+            transform: translateX(5px);
+        }
+
+        .confidence-box {
+            background: #fff;
+            border-radius: 15px;
+            padding: 1.5rem;
+            border: 1px solid #eef2f2;
+        }
+
+        .feature-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            color: white;
+            transition: all 0.3s;
+        }
+
+        .feature-card:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-5px);
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="/">
+                <i class="bi bi-capsule-pill me-2 fs-3"></i>
+                <span>MediMatch</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="/"><i class="bi bi-search me-1"></i>Drug Search</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/visualize_kg"><i class="bi bi-diagram-3 me-1"></i>Knowledge Graph</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/target-prediction"><i class="bi bi-bullseye me-1"></i>Target Prediction</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/prescription-ocr"><i class="bi bi-camera me-1"></i>Prescription OCR</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/pharmacy-locator"><i class="bi bi-geo-alt me-1"></i>Pharmacy Locator</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/drug-copilot"><i class="bi bi-robot me-1"></i>AI Copilot</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container my-5">
+        <div class="glass-card p-4 p-md-5">
+            <!-- Header -->
+            <!-- Header -->
+            <div class="text-center mb-5">
+                <h2 class="display-5 fw-bold mb-3" style="color: #004D40;">Prescription Digitization</h2>
+                <p class="lead text-muted mx-auto mb-4" style="max-width: 700px;">
+                    Upload an image of your prescription. Our medical-grade AI extracts medications and screens for safety interactions instantly.
+                </p>
+                <div>
+                    <button class="btn btn-outline-primary rounded-pill px-4" onclick="openHistoryModal()">
+                        <i class="bi bi-clock-history me-2"></i>View Upload History
+                    </button>
+                </div>
+            </div>
+
+            <div class="row g-5">
+                <!-- Left: Upload Zone -->
+                <div class="col-lg-5">
+                    <h3 class="h5 section-title">Input Source</h3>
+                    
+                    <div id="uploadZone" class="upload-zone text-center mb-4">
+                        <input type="file" id="fileInput" accept="image/*" class="d-none">
+                        <div class="mb-3">
+                            <i class="bi bi-cloud-arrow-up text-primary" style="font-size: 3.5rem;"></i>
+                        </div>
+                        <h5 class="fw-bold">Drop prescription here</h5>
+                        <p class="small text-muted mb-4">Supports JPG, PNG or PDF</p>
+                        <button id="browseBtn" class="btn btn-outline-primary px-4 rounded-pill">
+                            Browse Files
+                        </button>
+                    </div>
+
+                    <!-- Image Preview -->
+                    <div id="previewContainer" class="d-none mb-4 animate__animated animate__fadeIn">
+                        <p class="small fw-bold text-uppercase text-muted mb-2">Selected Image:</p>
+                        <div class="position-relative">
+                            <img id="imagePreview" class="w-100 rounded-3 shadow-sm border" alt="Preview">
+                            <div class="mt-2 text-center">
+                                <span id="fileName" class="badge bg-light text-dark border fw-normal"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- API Selection -->
+                    <div class="bg-light p-3 rounded-4 mb-4">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Processing Engine</label>
+                        <select id="apiSelection" class="form-select border-0 shadow-sm mb-2" style="border-radius: 10px;">
+                            <option value="hosted" selected>MediMatch Cloud (Fastest)</option>
+                            <option value="local">Gemini Vision (Manual API Key)</option>
+                        </select>
+                        <p id="apiDescription" class="small text-muted mb-0"><i class="bi bi-info-circle me-1"></i>Optimized medical OCR engine.</p>
+                    </div>
+
+                    <button id="uploadBtn" disabled class="btn btn-primary w-100 btn-lg py-3 shadow">
+                        <i class="bi bi-cpu me-2"></i>Analyze Prescription
+                    </button>
+
+                    <!-- Progress -->
+                    <div id="progress" class="d-none mt-4 text-center p-3 border rounded-4 bg-white shadow-sm">
+                        <div class="spinner mx-auto mb-3"></div>
+                        <p class="fw-bold mb-1" id="progressText">Analyzing content...</p>
+                        <p class="small text-muted">This usually takes 3-5 seconds</p>
+                    </div>
+                </div>
+
+                <!-- Right: Results -->
+                <div class="col-lg-7">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h3 class="h5 section-title">Extraction Results</h3>
+                        <button id="downloadPdfBtn" class="btn btn-danger btn-sm rounded-pill px-3 d-none">
+                            <i class="bi bi-file-earmark-pdf me-1"></i>Export PDF
+                        </button>
+                    </div>
+                
+                    <div id="resultsContainer" class="d-none">
+                        <!-- Confidence Gauge -->
+                        <div class="confidence-box mb-4">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <span class="small fw-bold text-muted text-uppercase">AI Confidence Score</span>
+                                <span id="overallConfidence" class="h4 fw-bold text-primary mb-0">--</span>
+                            </div>
+                            <div class="progress" style="height: 10px; border-radius: 10px; background: #eee;">
+                                <div id="confidenceBar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <!-- OCR Text (Collapsible for cleaner look) -->
+                        <div class="mb-4">
+                            <button class="btn btn-sm btn-light w-100 text-start d-flex justify-content-between align-items-center mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#textCollapse">
+                                <span class="small fw-bold">RAW EXTRACTED TEXT</span>
+                                <i class="bi bi-chevron-down"></i>
+                            </button>
+                            <div class="collapse" id="textCollapse">
+                                <div class="bg-light rounded-3 p-3 border">
+                                    <p id="extractedText" class="small font-monospace mb-0" style="white-space: pre-wrap;"></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Prescription Items -->
+                        <div id="prescriptionItems" class="mb-4">
+                            <!-- Items populated here via JS -->
+                        </div>
+
+                        <!-- Drug Interactions -->
+                        <div id="interactions" class="d-none mt-4 animate__animated animate__shakeX">
+                            <div class="alert alert-danger border-0 shadow-sm p-4 rounded-4">
+                                <div class="d-flex align-items-center mb-3">
+                                    <i class="bi bi-exclamation-octagon-fill fs-3 me-3"></i>
+                                    <h5 class="alert-heading fw-bold mb-0">Safety Warning: Interactions Detected</h5>
+                                </div>
+                                <div id="interactionsList" class="ms-1"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- No Results Placeholder -->
+                    <div id="noResults" class="text-center py-5 bg-light rounded-4 border-2 border-dashed">
+                        <i class="bi bi-file-earmark-medical text-muted opacity-25" style="font-size: 4rem;"></i>
+                        <p class="text-muted mt-3">Upload a document to view digitized data</p>
+                    </div>
+
+                    <!-- Error State -->
+                    <div id="error" class="d-none alert alert-custom-danger border-start border-4 border-danger bg-white shadow-sm">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-x-circle-fill text-danger me-3 fs-4"></i>
+                            <div>
+                                <p class="fw-bold mb-0">Analysis Failed</p>
+                                <p id="errorMessage" class="small text-muted mb-0"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Features Row -->
+        <div class="row g-4 mt-4">
+            <div class="col-md-4">
+                <div class="feature-card p-4 text-center">
+                    <div class="feature-icon"><i class="bi bi-pencil-square"></i></div>
+                    <h5 class="fw-bold">Handwriting AI</h5>
+                    <p class="small mb-0 opacity-75">Neural networks trained on thousands of medical handwriting styles.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card p-4 text-center">
+                    <div class="feature-icon"><i class="bi bi-shield-check"></i></div>
+                    <h5 class="fw-bold">Drug Screening</h5>
+                    <p class="small mb-0 opacity-75">Instant cross-referencing with global pharmaceutical databases.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card p-4 text-center">
+                    <div class="feature-icon"><i class="bi bi-file-earmark-pdf"></i></div>
+                    <h5 class="fw-bold">One-Click Export</h5>
+                    <p class="small mb-0 opacity-75">Convert messy prescriptions into clean, professional PDF reports.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div class="modal fade" id="historyModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-clock-history me-2"></i>Prescription History</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body bg-light">
+                   <div id="historyList" class="row g-3">
+                       <!-- Items loaded via JS -->
+                   </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- The original JS remains exactly as it was, ensuring functionality -->
+    <script>
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+        const browseBtn = document.getElementById('browseBtn');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const previewContainer = document.getElementById('previewContainer');
+        const imagePreview = document.getElementById('imagePreview');
+        const fileName = document.getElementById('fileName');
+        const progress = document.getElementById('progress');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const noResults = document.getElementById('noResults');
+        const errorDiv = document.getElementById('error');
+
+        let selectedFile = null;
+
+        const apiSelection = document.getElementById('apiSelection');
+        const apiDescription = document.getElementById('apiDescription');
+
+        apiSelection.addEventListener('change', () => {
+            if (apiSelection.value === 'local') {
+                apiDescription.innerHTML = '<i class="bi bi-info-circle me-1"></i>Local processing uses Gemini Vision with your API key';
+            } else {
+                apiDescription.innerHTML = '<i class="bi bi-info-circle me-1"></i>Optimized medical OCR engine.';
+            }
+        });
+
+        uploadZone.addEventListener('click', () => fileInput.click());
+        browseBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            fileInput.click();
+        });
+
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            selectedFile = file;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                imagePreview.src = e.target.result;
+                previewContainer.classList.remove('d-none');
+                fileName.textContent = file.name;
+                uploadBtn.disabled = false;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        uploadBtn.addEventListener('click', async () => {
+            if (!selectedFile) return;
+
+            const formData = new FormData();
+            formData.append('prescription_image', selectedFile);
+            formData.append('api_mode', apiSelection.value);
+
+            const progressText = document.getElementById('progressText');
+            progressText.textContent = apiSelection.value === 'hosted'
+                ? 'MediMatch Cloud is analyzing...'
+                : 'Local Gemini Vision is processing...';
+
+            progress.classList.remove('d-none');
+            resultsContainer.classList.add('d-none');
+            noResults.classList.add('d-none');
+            errorDiv.classList.add('d-none');
+            uploadBtn.disabled = true;
+
+            try {
+                const response = await fetch('/api/prescription/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                if (result.error) {
+                    showError(result.error);
+                    return;
+                }
+                displayResults(result);
+            } catch (error) {
+                showError('Failed to process prescription: ' + error.message);
+            } finally {
+                progress.classList.add('d-none');
+                uploadBtn.disabled = false;
+            }
+        });
+
+        function displayResults(result) {
+            resultsContainer.classList.remove('d-none');
+            noResults.classList.add('d-none');
+
+            const confidence = (result.overall_confidence * 100).toFixed(0);
+            document.getElementById('overallConfidence').textContent = confidence + '%';
+            document.getElementById('confidenceBar').style.width = confidence + '%';
+
+            const correctedText = result.stages?.correction?.corrected_text || result.stages?.ocr?.raw_text || 'No text extracted';
+            document.getElementById('extractedText').textContent = correctedText;
+
+            document.getElementById('downloadPdfBtn').classList.remove('d-none');
+            window.lastOCRResult = result;
+
+            const itemsContainer = document.getElementById('prescriptionItems');
+            itemsContainer.innerHTML = '';
+
+            if (result.prescription_items && result.prescription_items.length > 0) {
+                result.prescription_items.forEach((item, index) => {
+                    let instructionsHtml = '';
+                    if (item.instructions) {
+                        instructionsHtml = Array.isArray(item.instructions) ? item.instructions.join(', ') : item.instructions;
+                    }
+
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'medicine-item';
+                    itemDiv.innerHTML = `
+                        <div class="d-flex justify-content-between align-items-start">
+                            <h5 class="fw-bold text-dark mb-2"><i class="bi bi-capsule me-2 text-primary"></i>${item.drug_name || 'Unknown'}</h5>
+                            <span class="badge bg-light text-primary border">Drug ${index + 1}</span>
+                        </div>
+                        <div class="row g-2 mt-1">
+                            ${item.dosage ? `<div class="col-6 small"><strong>Dosage:</strong> ${item.dosage}</div>` : ''}
+                            ${item.frequency ? `<div class="col-6 small"><strong>Frequency:</strong> ${item.frequency}</div>` : ''}
+                            ${item.duration ? `<div class="col-6 small"><strong>Duration:</strong> ${item.duration}</div>` : ''}
+                            ${item.route ? `<div class="col-6 small"><strong>Route:</strong> ${item.route}</div>` : ''}
+                        </div>
+                        ${instructionsHtml ? `<div class="mt-2 p-2 bg-light rounded small text-muted"><strong>Instructions:</strong> ${instructionsHtml}</div>` : ''}
+                    `;
+                    itemsContainer.appendChild(itemDiv);
+                });
+                checkInteractions(result.prescription_items.map(item => item.drug_name));
+            } else {
+                itemsContainer.innerHTML = '<div class="alert alert-warning small">No specific drugs identified. Try a clearer photo.</div>';
+            }
+        }
+
+        async function checkInteractions(drugs) {
+            if (drugs.length < 2) return;
+            try {
+                const response = await fetch('/api/prescription/check-interactions', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ drugs })
+                });
+                const result = await response.json();
+                if (result.interactions && result.interactions.length > 0) {
+                    const interactionsDiv = document.getElementById('interactions');
+                    const interactionsList = document.getElementById('interactionsList');
+                    interactionsList.innerHTML = result.interactions.map(interaction => `
+                        <div class="mb-2 p-2 rounded bg-white bg-opacity-25 border-start border-3 border-white">
+                            <strong>${interaction.drug1} + ${interaction.drug2}:</strong> ${interaction.description}
+                        </div>
+                    `).join('');
+                    interactionsDiv.classList.remove('d-none');
+                }
+            } catch (error) { console.error('Interaction check failed:', error); }
+        }
+
+        function showError(message) {
+            errorDiv.classList.remove('d-none');
+            document.getElementById('errorMessage').textContent = message;
+            resultsContainer.classList.add('d-none');
+            noResults.classList.add('d-none');
+        }
+    </script>
+
+    <!-- PDF Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <script src="/static/js/prescription_ocr.js"></script>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

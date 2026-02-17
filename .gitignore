@@ -1,0 +1,115 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+venv/
+ENV/
+env/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment Variables (CRITICAL - Contains API Keys)
+.env
+.env.local
+.env.*.local
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb
+
+# Data Files (Too Large for GitHub)
+data/
+*.csv
+*.parquet
+*.jsonl
+*.faiss
+*.pkl
+*.zip
+
+# Model Checkpoints (Too Large)
+drugbot-distilgpt2-lora-checkpoints/
+models/
+*.pth
+*.pt
+*.h5
+*.ckpt
+
+# Static Generated Files
+static/uploads/
+static/processed/
+static/clean_kg_*.html
+
+# Temporary Files
+*.log
+*.tmp
+/tmp/
+temp/
+
+# OS Files
+Thumbs.db
+desktop.ini
+
+# Large Binary Files
+*.bin
+*.safetensors
+
+# Test Files
+test_*.py
+*_test.py
+
+# Documentation (Keep only README and essential docs)
+PHARMASAGE_DETAILED_ANALYSIS.md
+QUICK_REFERENCE.md
+SOLUTION_MISSING_COMMON_DRUGS.md
+SUMMARY.md
+pharmasage_architecture.png
+*.png
+*.jpg
+*.jpeg
+*.gif
+
+# Analysis/research documents (not for public repo)
+*_ANALYSIS.md
+*_REFERENCE.md
+CODEBASE_REVIEW_SUMMARY.md
+FIXES_APPLIED.md
+START_HERE.md
+UPLOAD_TO_GITHUB.md
+PUSH_TO_GITHUB_NOW.md
+BRANDING_FIXED.md
+
+# HTML test files
+*.html
+!templates/*.html
+
+# Compiled files
+*.pyc

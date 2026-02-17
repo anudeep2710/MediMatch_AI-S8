@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pharmacy Locator - MediMatch</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <!-- Global Styles -->
+    <link href="/static/css/global.css" rel="stylesheet">
+    <link href="/static/css/navbar.css" rel="stylesheet">
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    
+    <style>
+        /* Page-specific styles */
+        #map {
+            height: 600px;
+            width: 100%;
+            border-radius: 12px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-capsule-pill"></i>
+                MediMatch
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/"><i class="bi bi-search me-1"></i>Drug Search</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/visualize_kg"><i class="bi bi-diagram-3 me-1"></i>Knowledge Graph</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/target-prediction"><i class="bi bi-bullseye me-1"></i>Target Prediction</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/prescription-ocr"><i class="bi bi-camera me-1"></i>Prescription OCR</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/pharmacy-locator"><i class="bi bi-geo-alt me-1"></i>Pharmacy Locator</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/drug-copilot"><i class="bi bi-robot me-1"></i>AI Copilot</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container my-4">
+        <div class="glass-card p-4">
+            <div class="row g-4">
+                <!-- Sidebar -->
+                <div class="col-lg-4">
+                    <h2 class="h4 mb-3">Nearby Pharmacies</h2>
+                    
+                    <button id="findMeBtn" class="btn btn-primary w-100 mb-3">
+                        <i class="bi bi-geo-alt-fill me-2"></i>Find Nearest Pharmacies
+                    </button>
+                    
+                    <p class="text-muted small mb-3">Results provided by OpenStreetMap</p>
+                    
+                    <div id="resultsList" style="max-height: 500px; overflow-y: auto;">
+                        <!-- Pharmacy Cards will go here -->
+                        <div class="text-center text-muted py-5">
+                            <i class="bi bi-info-circle fs-3"></i>
+                            <p class="mt-2">Click "Find Nearest Pharmacies" to locate stores near you.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Map -->
+                <div class="col-lg-8 position-relative">
+                    <div id="map"></div>
+                    <!-- Loading Overlay -->
+                    <div id="mapLoader" class="d-none position-absolute top-0 start-0 w-100 h-100 bg-white bg-opacity-75 d-flex align-items-center justify-content-center" style="z-index: 1000; border-radius: 12px;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <script>
+        // Initialize Map
+        const map = L.map('map').setView([20.5937, 78.9629], 5); // Default to India center
+
+        // Add OSM Tile Layer (Free)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        const markers = [];
+        const findMeBtn = document.getElementById('findMeBtn');
+        const resultsList = document.getElementById('resultsList');
+        const mapLoader = document.getElementById('mapLoader');
+
+        // Custom Icons
+        const userIcon = L.icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41]
+        });
+
+        const pharmacyIcon = L.icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41]
+        });
+
+        findMeBtn.addEventListener('click', () => {
+            if (!navigator.geolocation) {
+                alert("Geolocation is not supported by your browser.");
+                return;
+            }
+
+            mapLoader.classList.remove('d-none');
+            findMeBtn.disabled = true;
+            findMeBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Locating...';
+
+            navigator.geolocation.getCurrentPosition(success, error);
+        });
+
+        function success(position) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            
+            // Move map to user
+            map.setView([lat, lng], 14);
+
+            // Add user marker
+            L.marker([lat, lng], {icon: userIcon}).addTo(map)
+                .bindPopup("Your Location")
+                .openPopup();
+
+            // Find Pharmacies using Nominatim API (Free)
+            findPharmacies(lat, lng);
+        }
+
+        function error() {
+            mapLoader.classList.add('d-none');
+            findMeBtn.disabled = false;
+            findMeBtn.innerHTML = '<i class="bi bi-geo-alt-fill me-2"></i>Find Nearest Pharmacies';
+            alert("Unable to retrieve your location.");
+        }
+
+        async function findPharmacies(lat, lng) {
+            // Using Nominatim API for nearby pharmacy search
+            const query = `https://nominatim.openstreetmap.org/search?format=json&q=pharmacy&limit=20&viewbox=${lng-0.05},${lat+0.05},${lng+0.05},${lat-0.05}&bounded=1`;
+            
+            try {
+                const response = await fetch(query);
+                const data = await response.json();
+                
+                displayPharmacies(data);
+            } catch (err) {
+                console.error(err);
+                alert("Failed to fetch pharmacy data.");
+            } finally {
+                mapLoader.classList.add('d-none');
+                findMeBtn.disabled = false;
+                findMeBtn.innerHTML = '<i class="bi bi-geo-alt-fill me-2"></i>Find Nearest Pharmacies';
+            }
+        }
+
+        function displayPharmacies(pharmacies) {
+            // Clear existing markers (except user)
+            markers.forEach(m => map.removeLayer(m));
+            resultsList.innerHTML = "";
+
+            if (pharmacies.length === 0) {
+                resultsList.innerHTML = '<div class="p-3 text-center text-muted">No pharmacies found nearby.</div>';
+                return;
+            }
+
+            pharmacies.forEach((pharm, index) => {
+                const name = pharm.display_name.split(',')[0];
+                const address = pharm.display_name.split(',').slice(1, 3).join(',');
+                
+                // Add Marker
+                const marker = L.marker([pharm.lat, pharm.lon], {icon: pharmacyIcon})
+                    .addTo(map)
+                    .bindPopup(`<strong>${name}</strong><br><small>${address}</small>`);
+                
+                markers.push(marker);
+
+                // Add List Item (Bootstrap Card)
+                const item = document.createElement('div');
+                item.className = "card mb-2 shadow-sm";
+                item.innerHTML = `
+                    <div class="card-body p-3" style="cursor: pointer;">
+                        <h6 class="card-title mb-1 text-primary">${name}</h6>
+                        <p class="card-text small text-muted text-truncate mb-0">${address}</p>
+                    </div>
+                `;
+                item.addEventListener('click', () => {
+                    map.setView([pharm.lat, pharm.lon], 16);
+                    marker.openPopup();
+                });
+                
+                resultsList.appendChild(item);
+            });
+        }
+    </script>
+    
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

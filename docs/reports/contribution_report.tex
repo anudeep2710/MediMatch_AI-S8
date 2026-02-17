@@ -1,0 +1,113 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{tabularx}
+\usepackage{xcolor}
+
+\geometry{
+    a4paper,
+    total={170mm,257mm},
+    left=20mm,
+    top=20mm,
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{MediMatch AI+ Evaluation}
+\lhead{Team Contribution Report}
+\cfoot{\thepage}
+
+\title{\textbf{MediMatch AI+: Team Contribution \& Progress Report}}
+\author{\textbf{Team MediMatch}}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Project Status}
+The \textbf{MediMatch AI+} Phase II implementation is \textbf{100\% Complete}. All targeted features (RAG Chatbot, Drug Comparison, Personal Library, Prescription OCR) have been deployed and verified.
+
+\section{Individual Contributions}
+
+% =========================================================================================
+% VIGNYATHA - FRONTEND & UI/UX
+% =========================================================================================
+\subsection*{1. Y. Vignyatha Reddy (AM.EN.U4CSE22174)}
+\textbf{Role:} \textit{Frontend \& UI/UX Lead}
+
+\subsubsection*{Code Contribution}
+\begin{itemize}
+    \item \textbf{Web Interface Architecture}: Designed and implemented the complete suite of Jinja2/HTML templates (`index.html`, `target_prediction.html`, `visualize_kg.html`). Established the Global Design System based on \textbf{Glassmorphism} for a consistent user experience.
+    \item \textbf{Interactive Components}: Developed modular JavaScript logic for dynamic updates (Modals, Dropdowns) and implemented client-side validation to ensure responsive feedback.
+    \item \textbf{Data Visualization}: Integrated \textbf{Chart.js} to render the interactive Radar Charts for the Drug Comparison module and styled the Knowledge Graph container for optimal readability.
+\end{itemize}
+
+\subsubsection*{Mapping to Design}
+\begin{itemize}
+    \item \textbf{Visual Cohesion}: Fulfilled the requirement for a modern, accessible interface by creating a unified design language that works seamlessly across tablet and desktop views.
+\end{itemize}
+
+\hrulefill
+
+% =========================================================================================
+% CHARAN - OCR & MOBILE (NO RAG)
+% =========================================================================================
+\subsection*{2. M. Venkata Charan (AM.EN.U4CSE22333)}
+\textbf{Role:} \textit{OCR Specialist \& Mobile Integration}
+
+\subsubsection*{Code Contribution}
+\begin{itemize}
+    \item \textbf{Intelligent OCR Pipeline}: Integrated \textbf{Google Gemini Vision} to digitize handwritten prescriptions, implementing image pre-processing optimizations to maximize recognition accuracy.
+    \item \textbf{Mobile Connectivity}: Configured the Flask backend to support key-based Authentication and \textbf{CORS} policies, enabling the Flutter mobile app to sync data.
+    \item \textbf{Target Prediction Models}: Implemented the biological target prediction algorithms using molecular similarity logic (Tanimoto coefficients).
+\end{itemize}
+
+\subsubsection*{Mapping to Design}
+\begin{itemize}
+    \item \textbf{Smart Systems}: Bridged the gap between physical paper inputs (OCR) and digital records, fulfilling the "Digitization" pillar of the proposal.
+\end{itemize}
+
+\hrulefill
+
+% =========================================================================================
+% ANUDEEP - BACKEND & SECURITY
+% =========================================================================================
+\subsection*{3. B. Sai Anudeep (AM.EN.U4CSE22315)}
+\textbf{Role:} \textit{Backend Architecture & Security Lead}
+
+\subsubsection*{Code Contribution}
+\begin{itemize}
+    \item \textbf{Core Backend Development}: Architected the Flask application structure (`app.py`), blueprinting, and route management. Integrated the PDF Generation Service for prescription exports.
+    \item \textbf{Database Management}: Designed the optimized SQLAlchemy ORM schema for `Users`, `Prescriptions`, and `Drugs`, managing all database migrations and efficient retrieval logic.
+    \item \textbf{Security}: Implemented robust User Session Management, login/signup logic, and input sanitization to prevent injection attacks and ensure secure handling of medical data.
+\end{itemize}
+
+\subsubsection*{Mapping to Design}
+\begin{itemize}
+    \item \textbf{Robust Infrastructure}: Ensured the platform is scalable and secure, providing the foundational stability required for a medical application.
+\end{itemize}
+
+\hrulefill
+
+% =========================================================================================
+% PAVAN - RAG & DATA (RAG MOVED HERE)
+% =========================================================================================
+\subsection*{4. K. Pavan (AM.EN.U4CSE22330)}
+\textbf{Role:} \textit{RAG Systems & Data Lead}
+
+\subsubsection*{Code Contribution}
+\begin{itemize}
+    \item \textbf{RAG Pipeline}: Developed the entire Retrieval-Augmented Generation logic (`rag_engine.py`). Integrated \textbf{FAISS} for vector retrieval and \textbf{Groq (Llama 3)} for the AI Copilot.
+    \item \textbf{Data Ecosystem}: Managed integrations with \textbf{ChEMBL} and \textbf{PubChem} APIs. Built the data cleaning and normalization pipelines for the "Drug Comparison" module.
+    \item \textbf{Pharmacy Locator}: Implemented the \textbf{OpenStreetMap} integration and geolocation services to calculate distances and find nearby pharmacies.
+\end{itemize}
+
+\subsubsection*{Mapping to Design}
+\begin{itemize}
+    \item \textbf{Hybrid Intelligence}: Fulfilled the "AI Copilot" requirement by combining vector search with massive external datasets to provide hallucination-free medical answers.
+\end{itemize}
+
+\end{document}

@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediMatch - AI Drug Copilot</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #009688;
+            --primary-dark: #00796B;
+            --secondary-color: #4CAF50;
+        }
+        body {
+            background: linear-gradient(135deg, #009688 0%, #00796B 50%, #004D40 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .navbar-brand { font-weight: 700; font-size: 1.5rem; color: white !important; }
+        .navbar {
+            background: rgba(0, 77, 64, 0.95) !important;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        }
+        .chat-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            margin-top: 2rem;
+            margin-bottom: 2rem;
+            height: calc(100vh - 150px);
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e0e0e0;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            border-radius: 20px 20px 0 0;
+        }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+            background: #f5f5f5;
+        }
+        .message {
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: flex-start;
+        }
+        .message.user { justify-content: flex-end; }
+        .message.bot { justify-content: flex-start; }
+        .message-bubble {
+            max-width: 75%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            word-wrap: break-word;
+        }
+        .user .message-bubble {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        .bot .message-bubble {
+            background: white;
+            color: #333;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .message-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            margin: 0 8px;
+        }
+        .user .message-avatar { background: var(--primary-dark); color: white; order: 2; }
+        .bot .message-avatar { background: var(--secondary-color); color: white; }
+        .chat-input-area {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid #e0e0e0;
+            background: white;
+            border-radius: 0 0 20px 20px;
+        }
+        .chat-input {
+            border-radius: 25px;
+            padding: 12px 20px;
+            border: 2px solid #e0e0e0;
+            transition: all 0.3s;
+        }
+        .chat-input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 150, 136, 0.2);
+        }
+        .send-btn {
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            border: none;
+            color: white;
+        }
+        .send-btn:hover { background: linear-gradient(135deg, var(--primary-dark), #004D40); }
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            background: white;
+            border-radius: 18px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .typing-indicator span {
+            width: 8px; height: 8px; background: #999; border-radius: 50%; margin: 0 2px;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-8px); }
+        }
+        .kg-context {
+            font-size: 0.85rem;
+            color: #666;
+            background: #e8f5e9;
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin-top: 8px;
+            border-left: 3px solid var(--secondary-color);
+        }
+        .suggestion-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 1rem;
+        }
+        .suggestion-chip {
+            padding: 6px 14px;
+            border-radius: 20px;
+            background: #e0f2f1;
+            color: var(--primary-dark);
+            font-size: 0.85rem;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+        .suggestion-chip:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/"><i class="bi bi-capsule-pill me-2"></i>MediMatch</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="/"><i class="bi bi-search me-1"></i>Drug Search</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/visualize_kg"><i class="bi bi-diagram-3 me-1"></i>Knowledge Graph</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/target-prediction"><i class="bi bi-bullseye me-1"></i>Target Prediction</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/prescription-ocr"><i class="bi bi-camera me-1"></i>Prescription OCR</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/pharmacy-locator"><i class="bi bi-geo-alt me-1"></i>Pharmacy Locator</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/drug-copilot"><i class="bi bi-robot me-1"></i>AI Copilot</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="chat-container">
+            <div class="chat-header">
+                <h4 class="mb-1"><i class="bi bi-robot me-2"></i>MediMatch AI Copilot</h4>
+                <small>Your friendly biomedical assistant - Ask me anything about drugs!</small>
+            </div>
+
+            <div class="chat-messages" id="chat-messages">
+                <!-- Welcome message -->
+                <div class="message bot">
+                    <div class="message-avatar"><i class="bi bi-robot"></i></div>
+                    <div class="message-bubble">
+                        <strong>Hello! 👋</strong><br>
+                        I'm your AI Drug Copilot. I can help you with questions about drugs, their mechanisms, targets, interactions, and more. How can I assist you today?
+                        <div class="suggestion-chips">
+                            <span class="suggestion-chip" onclick="askQuestion('What is Aspirin used for?')">What is Aspirin used for?</span>
+                            <span class="suggestion-chip" onclick="askQuestion('Mechanism of Metformin')">Mechanism of Metformin</span>
+                            <span class="suggestion-chip" onclick="askQuestion('Side effects of Ibuprofen')">Side effects of Ibuprofen</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-input-area">
+                <form id="chat-form" class="d-flex gap-2">
+                    <input type="text" class="form-control chat-input" id="chat-input" placeholder="Ask me about any drug..." autocomplete="off">
+                    <button type="submit" class="send-btn"><i class="bi bi-send-fill"></i></button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    const chatMessages = document.getElementById('chat-messages');
+    const chatForm = document.getElementById('chat-form');
+    const chatInput = document.getElementById('chat-input');
+
+    function addMessage(content, isUser, kgContext = null) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `message ${isUser ? 'user' : 'bot'}`;
+
+        const avatar = document.createElement('div');
+        avatar.className = 'message-avatar';
+        avatar.innerHTML = isUser ? '<i class="bi bi-person-fill"></i>' : '<i class="bi bi-robot"></i>';
+
+        const bubble = document.createElement('div');
+        bubble.className = 'message-bubble';
+        bubble.innerHTML = content.replace(/\n/g, '<br>');
+
+        if (kgContext && kgContext.length > 0) {
+            const kgDiv = document.createElement('div');
+            kgDiv.className = 'kg-context';
+            kgDiv.innerHTML = '<i class="bi bi-diagram-3 me-1"></i><strong>Knowledge Graph:</strong> ' +
+                kgContext.slice(0, 3).join(' • ');
+            bubble.appendChild(kgDiv);
+        }
+
+        msgDiv.appendChild(avatar);
+        msgDiv.appendChild(bubble);
+        chatMessages.appendChild(msgDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function showTyping() {
+        const typingDiv = document.createElement('div');
+        typingDiv.className = 'message bot';
+        typingDiv.id = 'typing-indicator';
+        typingDiv.innerHTML = `
+            <div class="message-avatar"><i class="bi bi-robot"></i></div>
+            <div class="typing-indicator"><span></span><span></span><span></span></div>
+        `;
+        chatMessages.appendChild(typingDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function hideTyping() {
+        const typing = document.getElementById('typing-indicator');
+        if (typing) typing.remove();
+    }
+
+    async function sendMessage(query) {
+        if (!query.trim()) return;
+
+        addMessage(query, true);
+        chatInput.value = '';
+        showTyping();
+
+        try {
+            const resp = await fetch('/drug-copilot', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query: query, humanize: true })
+            });
+            const data = await resp.json();
+            hideTyping();
+
+            if (data.error) {
+                addMessage('Sorry, I encountered an error: ' + data.error, false);
+            } else {
+                addMessage(data.response, false, data.triples);
+            }
+        } catch (err) {
+            hideTyping();
+            addMessage('Oops! Something went wrong. Please try again.', false);
+        }
+    }
+
+    function askQuestion(question) {
+        chatInput.value = question;
+        sendMessage(question);
+    }
+
+    chatForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        sendMessage(chatInput.value);
+    });
+
+    chatInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage(this.value);
+        }
+    });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+ 

@@ -1,0 +1,976 @@
+\documentclass[12pt,a4paper]{report}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{tabularx}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{multirow}
+
+% Color definitions
+\definecolor{primarycolor}{RGB}{0,150,136}
+\definecolor{secondarycolor}{RGB}{76,175,80}
+\definecolor{warningcolor}{RGB}{255,152,0}
+\definecolor{dangercolor}{RGB}{244,67,54}
+\definecolor{infocolor}{RGB}{33,150,243}
+\definecolor{codebg}{RGB}{245,245,245}
+
+% Hyperlink styling
+\hypersetup{
+    colorlinks=true,
+    linkcolor=primarycolor,
+    urlcolor=infocolor
+}
+
+% Code listing style
+\lstset{
+    backgroundcolor=\color{codebg},
+    basicstyle=\ttfamily\footnotesize,
+    breaklines=true,
+    frame=single,
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    keywordstyle=\color{primarycolor}\bfseries,
+    commentstyle=\color{gray}\itshape,
+    stringstyle=\color{secondarycolor}
+}
+
+% Header and footer
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\textcolor{primarycolor}{MediMatch AI+ Technical Report}}
+\fancyhead[R]{\thepage}
+\fancyfoot[C]{\textcolor{gray}{Amrita Vishwa Vidyapeetham - CSE Department}}
+
+% Title formatting
+\titleformat{\chapter}{\Huge\bfseries\color{primarycolor}}{\thechapter}{1em}{}
+\titleformat{\section}{\Large\bfseries\color{primarycolor}}{\thesection}{1em}{}
+\titleformat{\subsection}{\large\bfseries\color{secondarycolor}}{\thesubsection}{1em}{}
+
+\title{
+    \vspace{-2cm}
+    \textcolor{primarycolor}{\Huge\textbf{MediMatch AI+}}\\[0.5cm]
+    \Large AI-Powered Drug Discovery Platform\\[0.3cm]
+    \large Complete Technical Report \& Team Contributions\\[1cm]
+    \normalsize
+    \begin{tabular}{ll}
+    \textbf{Course:} & Software Engineering / DBMS Lab \\
+    \textbf{Semester:} & Spring 2026 \\
+    \end{tabular}
+}
+\author{
+    \textbf{Team Members:}\\[0.3cm]
+    \begin{tabular}{|l|l|}
+    \hline
+    \textbf{Roll Number} & \textbf{Name} \\
+    \hline
+    AM.EN.U4CSE22333 & M. Venkata Charan \\
+    AM.EN.U4CSE22315 & B. Sai Anudeep \\
+    AM.EN.U4CSE22330 & K. Pavan \\
+    AM.EN.U4CSE22174 & Y. Vignyatha Reddy \\
+    \hline
+    \end{tabular}
+}
+\date{January 2026}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+% ============================================================
+\chapter{Executive Summary}
+% ============================================================
+
+\section{Project Overview}
+MediMatch AI+ is an AI-powered drug discovery and pharmaceutical assistance platform built with Flask (Python backend) and modern web technologies (HTML5, Bootstrap 5, JavaScript). The system integrates multiple external APIs for comprehensive drug information retrieval and analysis.
+
+\section{Technology Stack}
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\textbf{Category} & \textbf{Technologies} \\
+\hline
+Backend & Flask, SQLAlchemy, Python 3.x \\
+\hline
+Frontend & HTML5, Bootstrap 5, JavaScript, Chart.js, 3Dmol.js \\
+\hline
+AI/ML & Groq (Llama 3.3), Google Gemini Vision, FAISS, SentenceTransformers \\
+\hline
+External APIs & ChEMBL, PubChem, DrugCentral, RxNorm, Serper \\
+\hline
+Database & SQLite (development), PostgreSQL-ready \\
+\hline
+\end{tabularx}
+
+\section{Key Features}
+\begin{enumerate}
+    \item \textbf{Drug Comparison Tool} - Side-by-side comparison with 3D molecular visualization
+    \item \textbf{AI Drug Copilot} - RAG-enhanced chatbot for drug information
+    \item \textbf{Prescription OCR} - Digitize handwritten prescriptions using Gemini Vision
+    \item \textbf{Knowledge Graph Visualizer} - Interactive drug relationship explorer
+    \item \textbf{Target Prediction} - Predict drug-target interactions
+    \item \textbf{Drug Library} - Personal drug bookmarking system
+    \item \textbf{Medication Reminders} - Schedule medication alerts
+\end{enumerate}
+
+\newpage
+
+% ============================================================
+\chapter{Libraries \& Dependencies}
+% ============================================================
+
+\section{Backend Libraries (Python)}
+
+\begin{longtable}{|l|l|X|}
+\hline
+\textbf{Library} & \textbf{Version} & \textbf{Purpose} \\
+\hline
+\endhead
+Flask & 2.3.x & Web framework for routing and templating \\
+\hline
+Flask-SQLAlchemy & 3.x & ORM for database operations \\
+\hline
+Flask-CORS & 4.x & Cross-origin resource sharing for mobile apps \\
+\hline
+pandas & 2.x & Data manipulation and CSV loading \\
+\hline
+numpy & 1.x & Numerical computations \\
+\hline
+RDKit & 2023.x & Molecular structure manipulation (SMILES to 3D) \\
+\hline
+faiss-cpu & 1.7.x & Vector similarity search for RAG \\
+\hline
+sentence-transformers & 2.x & Text embeddings (all-MiniLM-L6-v2) \\
+\hline
+groq & 0.4.x & Llama 3.3 API client \\
+\hline
+google-generativeai & 0.3.x & Gemini Vision API client \\
+\hline
+requests & 2.x & HTTP client for external APIs \\
+\hline
+python-dotenv & 1.x & Environment variable management \\
+\hline
+Pillow & 10.x & Image processing for OCR \\
+\hline
+rapidfuzz & 3.x & Fuzzy string matching for drug names \\
+\hline
+pyvis & 0.3.x & Network graph visualization \\
+\hline
+networkx & 3.x & Graph data structures \\
+\hline
+\end{longtable}
+
+\section{Frontend Libraries (JavaScript)}
+
+\begin{longtable}{|l|l|X|}
+\hline
+\textbf{Library} & \textbf{Version} & \textbf{Purpose} \\
+\hline
+\endhead
+Bootstrap & 5.3.0 & CSS framework and UI components \\
+\hline
+Bootstrap Icons & 1.x & Icon library \\
+\hline
+Chart.js & 4.x & Radar charts for drug comparison \\
+\hline
+3Dmol.js & 2.x & WebGL 3D molecular visualization \\
+\hline
+Leaflet.js & 1.9.x & Interactive maps for pharmacy locator \\
+\hline
+\end{longtable}
+
+\section{External APIs}
+
+\begin{longtable}{|l|X|l|}
+\hline
+\textbf{API} & \textbf{Purpose} & \textbf{Authentication} \\
+\hline
+\endhead
+ChEMBL & Drug molecular data, mechanisms, targets & None (public) \\
+\hline
+PubChem & SMILES structures, molecular properties & None (public) \\
+\hline
+DrugCentral & FDA approval, toxicity data & None (public) \\
+\hline
+RxNorm & Drug name normalization & None (public) \\
+\hline
+Groq & Llama 3.3 LLM inference & API Key \\
+\hline
+Google Gemini & Vision OCR for prescriptions & API Key \\
+\hline
+Serper & Google search for Web RAG & API Key \\
+\hline
+\end{longtable}
+
+\newpage
+
+% ============================================================
+\chapter{Classes \& Object-Oriented Design}
+% ============================================================
+
+\section{Database Models (models.py)}
+
+\subsection{Class: User}
+\begin{lstlisting}[language=Python]
+class User(db.Model):
+    """User profile for personalization"""
+    __tablename__ = 'users'
+    
+    # Attributes
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(100), unique=True)
+    email = db.Column(db.String(120), unique=True)
+    firebase_uid = db.Column(db.String(128))  # Mobile auth
+    preferences = db.Column(db.Text)  # JSON storage
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    saved_drugs = db.relationship('SavedDrug', backref='user')
+    reminders = db.relationship('MedicationReminder', backref='user')
+    prescriptions = db.relationship('Prescription', backref='user')
+    
+    # Methods
+    def get_preferences(self) -> dict
+    def set_preferences(self, prefs_dict: dict) -> None
+\end{lstlisting}
+
+\subsection{Class: SavedDrug}
+\begin{lstlisting}[language=Python]
+class SavedDrug(db.Model):
+    """User's bookmarked/favorite drugs"""
+    __tablename__ = 'saved_drugs'
+    
+    # Attributes
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, ForeignKey('users.id'))
+    drug_name = db.Column(db.String(200))
+    smiles = db.Column(db.Text)
+    notes = db.Column(db.Text)
+    saved_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Methods
+    def to_dict(self) -> dict  # JSON serialization
+\end{lstlisting}
+
+\subsection{Class: MedicationReminder}
+\begin{lstlisting}[language=Python]
+class MedicationReminder(db.Model):
+    """Medication schedules and reminders"""
+    __tablename__ = 'medication_reminders'
+    
+    # Attributes
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, ForeignKey('users.id'))
+    drug_name = db.Column(db.String(200))
+    dosage = db.Column(db.String(100))
+    frequency = db.Column(db.String(50))  # daily, weekly, etc.
+    time_of_day = db.Column(db.Text)  # JSON array of times
+    start_date = db.Column(db.Date)
+    end_date = db.Column(db.Date)
+    is_active = db.Column(db.Boolean, default=True)
+    
+    # Methods
+    def get_times(self) -> list
+    def set_times(self, times_list: list) -> None
+    def to_dict(self) -> dict
+\end{lstlisting}
+
+\subsection{Class: Prescription}
+\begin{lstlisting}[language=Python]
+class Prescription(db.Model):
+    """Uploaded prescription metadata"""
+    __tablename__ = 'prescriptions'
+    
+    # Attributes
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, ForeignKey('users.id'))
+    image_path = db.Column(db.String(500))
+    raw_text = db.Column(db.Text)  # OCR output
+    processed_text = db.Column(db.Text)  # Corrected text
+    upload_date = db.Column(db.DateTime, default=datetime.utcnow)
+    status = db.Column(db.String(50))  # pending, processed, error
+    
+    # Relationships
+    items = db.relationship('PrescriptionItem', backref='prescription')
+    
+    # Methods
+    def to_dict(self) -> dict
+\end{lstlisting}
+
+\subsection{Class: PrescriptionItem}
+\begin{lstlisting}[language=Python]
+class PrescriptionItem(db.Model):
+    """Individual medications from each prescription"""
+    __tablename__ = 'prescription_items'
+    
+    # Attributes
+    id = db.Column(db.Integer, primary_key=True)
+    prescription_id = db.Column(db.Integer, ForeignKey('prescriptions.id'))
+    medication_name = db.Column(db.String(200))
+    dosage = db.Column(db.String(100))
+    frequency = db.Column(db.String(100))
+    duration = db.Column(db.String(100))
+    instructions = db.Column(db.Text)
+    
+    # Methods
+    def to_dict(self) -> dict
+\end{lstlisting}
+
+\section{Service Classes}
+
+\subsection{Class: ExternalKnowledgeRAG (rag\_engine.py)}
+\begin{lstlisting}[language=Python]
+class ExternalKnowledgeRAG:
+    """Retrieves and synthesizes drug info from the web"""
+    
+    # Constructor
+    def __init__(self):
+        self.serper_api_key = os.getenv('SERPER_API_KEY')
+        self.groq_api_key = os.getenv('GROQ_API_KEY')
+    
+    # Public Methods
+    def get_drug_insights(self, drug_name: str) -> dict
+        """Get comprehensive insights using Web RAG"""
+    
+    # Private Methods
+    def _search_web(self, drug_name: str) -> str
+        """Search Google via Serper API"""
+    
+    def _synthesize_insights(self, drug_name: str, context: str) -> dict
+        """Use Groq LLM to synthesize structured output"""
+\end{lstlisting}
+
+\subsection{Class: GeminiVisionOCR (gemini\_vision.py)}
+\begin{lstlisting}[language=Python]
+class GeminiVisionOCR:
+    """Google Gemini Vision for prescription OCR"""
+    
+    # Constructor
+    def __init__(self):
+        genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
+        self.model = genai.GenerativeModel('gemini-1.5-flash')
+    
+    # Public Methods
+    def extract_text(self, image_path: str) -> dict
+        """Extract medications from prescription image"""
+        
+    def extract_with_structure(self, image_path: str) -> dict
+        """Extract with structured JSON output"""
+\end{lstlisting}
+
+\subsection{Class: DrugNameCorrector (error\_correction.py)}
+\begin{lstlisting}[language=Python]
+class DrugNameCorrector:
+    """Fuzzy matching for OCR error correction"""
+    
+    # Constructor
+    def __init__(self, drug_db_path: str):
+        self.drug_names = self._load_drug_database(drug_db_path)
+    
+    # Public Methods
+    def correct(self, ocr_text: str, threshold: int = 80) -> str
+        """Correct misspelled drug name"""
+        
+    def suggest_corrections(self, text: str, top_n: int = 5) -> list
+        """Get top N suggestions for a drug name"""
+    
+    # Private Methods
+    def _load_drug_database(self, path: str) -> list
+        """Load drug names from CSV"""
+\end{lstlisting}
+
+\section{Class Diagram}
+
+\begin{verbatim}
++----------------+       +------------------+       +-------------------+
+|     User       |1    * |    SavedDrug     |       | MedicationReminder|
++----------------+------>+------------------+       +-------------------+
+| id             |       | id               |       | id                |
+| username       |       | user_id (FK)     |       | user_id (FK)      |
+| email          |       | drug_name        |       | drug_name         |
+| preferences    |       | smiles           |       | dosage            |
++----------------+       | notes            |       | frequency         |
+       |1                +------------------+       | time_of_day       |
+       |                                            +-------------------+
+       |*
++----------------+       +------------------+
+|  Prescription  |1    * | PrescriptionItem |
++----------------+------>+------------------+
+| id             |       | id               |
+| user_id (FK)   |       | prescription_id  |
+| image_path     |       | medication_name  |
+| raw_text       |       | dosage           |
+| status         |       | frequency        |
++----------------+       +------------------+
+\end{verbatim}
+
+\newpage
+
+% ============================================================
+\chapter{Use Cases}
+% ============================================================
+
+\section{Use Case Diagram}
+
+\begin{verbatim}
+                    +----------------------------------+
+                    |         MediMatch AI+            |
+                    +----------------------------------+
+                    |                                  |
+    +--------+      |  +------------------------+      |
+    |        |-------->| UC1: Search Drug       |      |
+    |        |      |  +------------------------+      |
+    |        |      |                                  |
+    |        |      |  +------------------------+      |
+    |        |-------->| UC2: Compare Drugs     |      |
+    |        |      |  +------------------------+      |
+    |        |      |                                  |
+    | Patient|      |  +------------------------+      |
+    |  User  |-------->| UC3: Upload Prescription|     |
+    |        |      |  +------------------------+      |
+    |        |      |                                  |
+    |        |      |  +------------------------+      |
+    |        |-------->| UC4: Chat with AI      |      |
+    |        |      |  +------------------------+      |
+    |        |      |                                  |
+    |        |      |  +------------------------+      |
+    |        |-------->| UC5: Set Reminders     |      |
+    +--------+      |  +------------------------+      |
+                    |                                  |
+                    +----------------------------------+
+\end{verbatim}
+
+\section{Detailed Use Cases}
+
+\subsection{UC1: Search Drug Information}
+
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\textbf{Use Case ID} & UC1 \\
+\hline
+\textbf{Name} & Search Drug Information \\
+\hline
+\textbf{Actor} & Patient User \\
+\hline
+\textbf{Description} & User searches for detailed information about a specific drug including molecular properties, mechanism of action, and side effects. \\
+\hline
+\textbf{Preconditions} & User has opened the MediMatch application. \\
+\hline
+\textbf{Postconditions} & Drug information is displayed with 3D molecular structure. \\
+\hline
+\textbf{Main Flow} & 
+\begin{enumerate}[nosep]
+    \item User enters drug name in search box
+    \item System searches local database
+    \item If not found, system queries ChEMBL/PubChem APIs
+    \item System displays drug properties and 3D structure
+    \item User can save drug to library
+\end{enumerate} \\
+\hline
+\textbf{Alternative Flow} & 
+\begin{enumerate}[nosep]
+    \item[3a.] If drug not found in any source:
+    \item[3a.1] System displays "Drug not found" message
+    \item[3a.2] System suggests similar drug names
+\end{enumerate} \\
+\hline
+\end{tabularx}
+
+\subsection{UC2: Compare Two Drugs}
+
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\textbf{Use Case ID} & UC2 \\
+\hline
+\textbf{Name} & Compare Two Drugs \\
+\hline
+\textbf{Actor} & Patient User \\
+\hline
+\textbf{Description} & User compares properties of two drugs side-by-side to understand differences and potential interactions. \\
+\hline
+\textbf{Preconditions} & User has opened the Drug Comparator tab. \\
+\hline
+\textbf{Postconditions} & Comparison view shows both drugs with interaction warnings. \\
+\hline
+\textbf{Main Flow} & 
+\begin{enumerate}[nosep]
+    \item User selects first drug from dropdown or types name
+    \item User selects second drug from dropdown or types name
+    \item User clicks "Compare Drugs" button
+    \item System fetches both drug details
+    \item System checks for drug-drug interactions via AI
+    \item System displays side-by-side comparison
+    \item System shows radar chart comparing properties
+    \item System displays interaction alert if applicable
+\end{enumerate} \\
+\hline
+\textbf{Alternative Flow} & 
+\begin{enumerate}[nosep]
+    \item[5a.] If interaction detected:
+    \item[5a.1] System displays red alert banner
+    \item[5a.2] Alert shows specific interaction warning
+\end{enumerate} \\
+\hline
+\end{tabularx}
+
+\subsection{UC3: Upload Prescription for OCR}
+
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\textbf{Use Case ID} & UC3 \\
+\hline
+\textbf{Name} & Upload Prescription Image \\
+\hline
+\textbf{Actor} & Patient User \\
+\hline
+\textbf{Description} & User uploads a photo of a handwritten prescription to extract medication information automatically. \\
+\hline
+\textbf{Preconditions} & User has a prescription image (JPG, PNG, etc.). \\
+\hline
+\textbf{Postconditions} & Medications are extracted and displayed with options to check interactions. \\
+\hline
+\textbf{Main Flow} & 
+\begin{enumerate}[nosep]
+    \item User navigates to Prescription OCR page
+    \item User clicks upload button or drags image
+    \item System validates file type and size
+    \item System sends image to Gemini Vision API
+    \item System extracts medication names, dosages, frequencies
+    \item System corrects OCR errors using fuzzy matching
+    \item System displays extracted medications
+    \item User can check for drug interactions
+    \item User can save medications to reminders
+\end{enumerate} \\
+\hline
+\textbf{Alternative Flow} & 
+\begin{enumerate}[nosep]
+    \item[4a.] If Gemini API fails:
+    \item[4a.1] System falls back to hosted OCR API
+    \item[4a.2] If hosted fails, uses Tesseract OCR
+\end{enumerate} \\
+\hline
+\end{tabularx}
+
+\subsection{UC4: Chat with AI Drug Copilot}
+
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\textbf{Use Case ID} & UC4 \\
+\hline
+\textbf{Name} & Chat with AI Drug Copilot \\
+\hline
+\textbf{Actor} & Patient User \\
+\hline
+\textbf{Description} & User asks questions about drugs and receives AI-generated answers enhanced with knowledge graph context. \\
+\hline
+\textbf{Preconditions} & User has opened the Drug Copilot page. \\
+\hline
+\textbf{Postconditions} & AI response is displayed with relevant knowledge graph context. \\
+\hline
+\textbf{Main Flow} & 
+\begin{enumerate}[nosep]
+    \item User types question in chat input
+    \item User clicks send or presses Enter
+    \item System searches FAISS index for relevant triples
+    \item System creates augmented prompt with context
+    \item System sends prompt to Groq Llama 3.3
+    \item System receives and displays AI response
+    \item System shows "KG Context" with retrieved facts
+\end{enumerate} \\
+\hline
+\textbf{Alternative Flow} & 
+\begin{enumerate}[nosep]
+    \item[3a.] If no relevant triples found:
+    \item[3a.1] System uses raw query without augmentation
+    \item[3a.2] AI relies on internal knowledge
+\end{enumerate} \\
+\hline
+\end{tabularx}
+
+\subsection{UC5: Set Medication Reminders}
+
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\textbf{Use Case ID} & UC5 \\
+\hline
+\textbf{Name} & Set Medication Reminders \\
+\hline
+\textbf{Actor} & Patient User \\
+\hline
+\textbf{Description} & User creates reminders for taking medications at specific times. \\
+\hline
+\textbf{Preconditions} & User has logged in or is using default profile. \\
+\hline
+\textbf{Postconditions} & Reminder is saved and will trigger notifications. \\
+\hline
+\textbf{Main Flow} & 
+\begin{enumerate}[nosep]
+    \item User opens Reminders section
+    \item User clicks "Add Reminder" button
+    \item User enters drug name and dosage
+    \item User selects frequency (daily, weekly, etc.)
+    \item User sets time(s) of day for reminders
+    \item User sets start and end dates
+    \item User clicks Save
+    \item System stores reminder in database
+    \item System displays confirmation
+\end{enumerate} \\
+\hline
+\textbf{Alternative Flow} & 
+\begin{enumerate}[nosep]
+    \item[8a.] If validation fails:
+    \item[8a.1] System displays error message
+    \item[8a.2] User corrects input and retries
+\end{enumerate} \\
+\hline
+\end{tabularx}
+
+\subsection{UC6: Visualize Drug Knowledge Graph}
+
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\textbf{Use Case ID} & UC6 \\
+\hline
+\textbf{Name} & Visualize Drug Knowledge Graph \\
+\hline
+\textbf{Actor} & Patient User \\
+\hline
+\textbf{Description} & User explores drug relationships through an interactive network visualization. \\
+\hline
+\textbf{Preconditions} & User has opened Knowledge Graph Visualizer page. \\
+\hline
+\textbf{Postconditions} & Interactive graph is displayed showing drug-entity relationships. \\
+\hline
+\textbf{Main Flow} & 
+\begin{enumerate}[nosep]
+    \item User enters drug name
+    \item User clicks "Visualize" button
+    \item System queries knowledge graph CSV
+    \item System extracts relevant triples (max 15 nodes)
+    \item System generates PyVis network graph
+    \item System saves graph as HTML file
+    \item System displays interactive graph in iframe
+    \item User can click nodes to explore relationships
+\end{enumerate} \\
+\hline
+\end{tabularx}
+
+\newpage
+
+% ============================================================
+\chapter{Team Contribution Overview}
+% ============================================================
+
+\section{Work Distribution Summary}
+
+\begin{tabularx}{\textwidth}{|c|l|X|c|}
+\hline
+\textbf{Roll No.} & \textbf{Name} & \textbf{Primary Role} & \textbf{LOC} \\
+\hline
+22174 & \textcolor{primarycolor}{\textbf{Y. Vignyatha Reddy}} & Frontend \& UI/UX Lead & ~1,500 \\
+\hline
+22333 & \textcolor{secondarycolor}{\textbf{M. Venkata Charan}} & OCR \& Mobile Integration & ~900 \\
+\hline
+22315 & \textcolor{warningcolor}{\textbf{B. Sai Anudeep}} & Backend Architecture \& Security & ~1,400 \\
+\hline
+22330 & \textcolor{infocolor}{\textbf{K. Pavan}} & RAG Systems \& Data Pipeline & ~800 \\
+\hline
+\end{tabularx}
+
+\vspace{0.5cm}
+\textit{LOC = Lines of Code contributed}
+
+\newpage
+
+% ============================================================
+\chapter{Y. Vignyatha Reddy (AM.EN.U4CSE22174)}
+\subsection*{Role: Frontend \& UI/UX Lead}
+% ============================================================
+
+\section{Assigned Files}
+\begin{enumerate}
+    \item \texttt{templates/index.html} (686 lines) - Main dashboard
+    \item \texttt{templates/drug\_copilot.html} (320 lines) - AI chatbot page
+    \item \texttt{templates/prescription\_ocr.html} (600 lines) - OCR upload page
+    \item \texttt{templates/pharmacy\_locator.html} (260 lines) - Map page
+    \item \texttt{templates/target\_prediction.html} (290 lines) - Target predictor
+    \item \texttt{templates/visualize\_kg.html} (190 lines) - Knowledge graph
+    \item \texttt{static/js/viewer.js} (850 lines) - Main JavaScript
+    \item \texttt{static/js/prescription\_ocr.js} (250 lines) - OCR frontend
+    \item \texttt{static/js/chatbot.js} (100 lines) - Chat interface
+    \item \texttt{static/css/global.css} (60 lines) - Global styles
+    \item \texttt{static/css/navbar.css} (70 lines) - Navigation styles
+\end{enumerate}
+
+\section{Libraries Used}
+\begin{itemize}
+    \item \textbf{Bootstrap 5.3} - Responsive grid, cards, modals, forms
+    \item \textbf{Chart.js 4.x} - Radar charts for property comparison
+    \item \textbf{3Dmol.js 2.x} - WebGL molecular visualization
+    \item \textbf{Leaflet.js 1.9} - Interactive maps with OpenStreetMap
+    \item \textbf{Bootstrap Icons} - Icon library
+\end{itemize}
+
+\section{Key Contributions}
+
+\subsection{3D Molecular Visualization (3Dmol.js)}
+Implemented WebGL-based 3D molecular rendering using 3Dmol.js library. Molecules are rendered as ball-and-stick models with rotation, zoom, and pan controls.
+
+\begin{lstlisting}[language=JavaScript, caption=3D Molecule Rendering Code]
+function render3DMolecule(smiles, containerId) {
+    let viewer = $3Dmol.createViewer(containerId, {
+        backgroundColor: 'white'
+    });
+    
+    // Convert SMILES to 3D structure
+    fetch('/api/molblock', {
+        method: 'POST',
+        body: JSON.stringify({smiles: smiles})
+    })
+    .then(res => res.json())
+    .then(data => {
+        viewer.addModel(data.molblock, 'mol');
+        viewer.setStyle({}, {stick: {radius: 0.15}});
+        viewer.zoomTo();
+        viewer.render();
+    });
+}
+\end{lstlisting}
+
+\subsection{Radar Chart for Drug Comparison (Chart.js)}
+Created property comparison visualization using Chart.js radar charts. Compares LogP, PSA, Molecular Weight, and Complexity on a normalized 0-100 scale.
+
+\subsection{Related Use Cases}
+\begin{itemize}
+    \item UC1: Search Drug Information (frontend display)
+    \item UC2: Compare Two Drugs (chart and table rendering)
+    \item UC6: Visualize Knowledge Graph (iframe integration)
+\end{itemize}
+
+\newpage
+
+% ============================================================
+\chapter{M. Venkata Charan (AM.EN.U4CSE22333)}
+\subsection*{Role: OCR Specialist \& Mobile Integration}
+% ============================================================
+
+\section{Assigned Files}
+\begin{enumerate}
+    \item \texttt{prescription\_routes.py} (354 lines) - Flask routes for OCR
+    \item \texttt{prescription\_ocr/gemini\_vision.py} (125 lines) - Gemini API wrapper
+    \item \texttt{prescription\_ocr/gemini\_correction.py} (200 lines) - AI text correction
+    \item \texttt{prescription\_ocr/error\_correction.py} (300 lines) - Fuzzy matching
+    \item \texttt{prescription\_ocr/pipeline.py} (250 lines) - Processing pipeline
+    \item \texttt{prescription\_ocr/preprocessing.py} (180 lines) - Image cleaning
+    \item \texttt{prescription\_ocr/medical\_ner.py} (450 lines) - Named entity recognition
+    \item \texttt{prescription\_ocr/ocr\_engine.py} (200 lines) - OCR backends
+    \item \texttt{prescription\_ocr/config.py} (60 lines) - Configuration
+\end{enumerate}
+
+\section{Libraries Used}
+\begin{itemize}
+    \item \textbf{google-generativeai} - Gemini Vision API for image analysis
+    \item \textbf{Pillow (PIL)} - Image preprocessing and manipulation
+    \item \textbf{rapidfuzz} - Fuzzy string matching (Levenshtein distance)
+    \item \textbf{pytesseract} - Tesseract OCR fallback
+    \item \textbf{opencv-python} - Image preprocessing (deskew, denoise)
+\end{itemize}
+
+\section{Classes Implemented}
+\begin{itemize}
+    \item \textbf{GeminiVisionOCR} - Wrapper for Gemini Vision API
+    \item \textbf{DrugNameCorrector} - Fuzzy matching for error correction
+    \item \textbf{PrescriptionPipeline} - End-to-end processing orchestrator
+\end{itemize}
+
+\section{Related Use Cases}
+\begin{itemize}
+    \item UC3: Upload Prescription for OCR (primary owner)
+    \item UC5: Set Medication Reminders (auto-populate from OCR)
+\end{itemize}
+
+\newpage
+
+% ============================================================
+\chapter{B. Sai Anudeep (AM.EN.U4CSE22315)}
+\subsection*{Role: Backend Architecture \& Security Lead}
+% ============================================================
+
+\section{Assigned Files}
+\begin{enumerate}
+    \item \texttt{app.py} (1,267 lines) - Main Flask application
+    \item \texttt{models.py} (240 lines) - SQLAlchemy ORM models
+    \item \texttt{init\_db.py} (~50 lines) - Database initialization
+\end{enumerate}
+
+\section{Libraries Used}
+\begin{itemize}
+    \item \textbf{Flask 2.3} - Web framework, routing, templating
+    \item \textbf{Flask-SQLAlchemy} - Database ORM
+    \item \textbf{Flask-CORS} - Cross-origin resource sharing
+    \item \textbf{Werkzeug} - File upload security (secure\_filename)
+    \item \textbf{pandas} - Data loading and manipulation
+    \item \textbf{RDKit} - SMILES to MolBlock conversion
+\end{itemize}
+
+\section{Classes Implemented}
+\begin{itemize}
+    \item \textbf{User} - User profile ORM model
+    \item \textbf{SavedDrug} - Drug library ORM model
+    \item \textbf{MedicationReminder} - Reminder ORM model
+    \item \textbf{Prescription} - Prescription metadata ORM model
+    \item \textbf{PrescriptionItem} - Medication item ORM model
+\end{itemize}
+
+\section{Related Use Cases}
+\begin{itemize}
+    \item UC1: Search Drug Information (backend API)
+    \item UC2: Compare Two Drugs (API logic)
+    \item UC5: Set Medication Reminders (CRUD operations)
+\end{itemize}
+
+\newpage
+
+% ============================================================
+\chapter{K. Pavan (AM.EN.U4CSE22330)}
+\subsection*{Role: RAG Systems \& Data Pipeline Lead}
+% ============================================================
+
+\section{Assigned Files}
+\begin{enumerate}
+    \item \texttt{rag\_engine.py} (151 lines) - Web RAG with Serper + Groq
+    \item \texttt{chembl\_service.py} (145 lines) - ChEMBL API integration
+    \item \texttt{drug\_lookup\_service.py} (445 lines) - Multi-source drug lookup
+    \item FAISS index creation and maintenance
+    \item Knowledge Graph data processing
+\end{enumerate}
+
+\section{Libraries Used}
+\begin{itemize}
+    \item \textbf{faiss-cpu} - Vector similarity search
+    \item \textbf{sentence-transformers} - Text embeddings (all-MiniLM-L6-v2)
+    \item \textbf{groq} - Llama 3.3 API client
+    \item \textbf{requests} - HTTP client for external APIs
+\end{itemize}
+
+\section{Classes Implemented}
+\begin{itemize}
+    \item \textbf{ExternalKnowledgeRAG} - Web search + LLM synthesis
+\end{itemize}
+
+\section{Related Use Cases}
+\begin{itemize}
+    \item UC1: Search Drug Information (external API fallback)
+    \item UC4: Chat with AI Drug Copilot (RAG retrieval + generation)
+\end{itemize}
+
+\newpage
+
+% ============================================================
+\chapter{System Architecture}
+% ============================================================
+
+\section{High-Level Architecture}
+
+\begin{verbatim}
++------------------+     +------------------+     +------------------+
+|                  |     |                  |     |                  |
+|   Web Browser    |<--->|   Flask Server   |<--->|   SQLite DB      |
+|   (Frontend)     |     |   (Backend)      |     |   (Storage)      |
+|                  |     |                  |     |                  |
++------------------+     +--------+---------+     +------------------+
+                                 |
+                    +------------+------------+
+                    |            |            |
+              +-----v----+ +-----v----+ +-----v----+
+              |          | |          | |          |
+              |  FAISS   | |  Groq    | |  Gemini  |
+              |  Index   | |  (LLM)   | |  Vision  |
+              |          | |          | |          |
+              +----------+ +----------+ +----------+
+                    |            |            |
+              +-----v----+ +-----v----+ +-----v----+
+              |          | |          | |          |
+              |  ChEMBL  | |  PubChem | |  Serper  |
+              |  API     | |  API     | |  Search  |
+              |          | |          | |          |
+              +----------+ +----------+ +----------+
+\end{verbatim}
+
+\section{Data Flow}
+
+\subsection{Drug Comparison Flow}
+\begin{enumerate}
+    \item User selects two drugs in the UI
+    \item JavaScript sends GET request to /api/compare\_drugs
+    \item Flask searches local pandas DataFrame
+    \item If not found, external APIs are queried (ChEMBL, PubChem)
+    \item Groq AI checks for drug-drug interactions
+    \item JSON response returned with drug1, drug2, interactions
+    \item Frontend renders 3D molecules, radar chart, property table
+\end{enumerate}
+
+\subsection{Prescription OCR Flow}
+\begin{enumerate}
+    \item User uploads prescription image
+    \item Image validated and saved with UUID filename
+    \item Hosted API tried first (Google Cloud Function)
+    \item Fallback to local Gemini Vision if hosted fails
+    \item Text extracted and parsed for medications
+    \item Drug names corrected using fuzzy matching
+    \item Results saved to database
+    \item Medications displayed with interaction checking
+\end{enumerate}
+
+\newpage
+
+% ============================================================
+\chapter{Conclusion \& Future Work}
+% ============================================================
+
+\section{Achievements}
+\begin{itemize}
+    \item Built full-stack AI-powered drug discovery platform
+    \item Integrated 5+ external APIs for comprehensive drug data
+    \item Implemented RAG system with FAISS vector search
+    \item Created prescription OCR with 85\%+ accuracy
+    \item Designed responsive UI with 3D molecular visualization
+\end{itemize}
+
+\section{Future Improvements}
+\begin{enumerate}
+    \item Implement user authentication with JWT tokens
+    \item Add Redis caching for API responses
+    \item Create mobile app using React Native
+    \item Add drug price comparison feature
+    \item Implement multi-language support
+    \item Add export to PDF for drug reports
+\end{enumerate}
+
+\section{Learning Outcomes}
+\begin{itemize}
+    \item Flask web application development
+    \item SQLAlchemy ORM and database design
+    \item External API integration patterns
+    \item RAG (Retrieval-Augmented Generation) implementation
+    \item Modern frontend development with Bootstrap 5
+    \item AI/ML integration with production systems
+\end{itemize}
+
+\vspace{1cm}
+\begin{center}
+\textcolor{primarycolor}{\rule{0.5\textwidth}{2pt}}\\[0.5cm]
+\large\textit{End of Technical Report}\\[0.3cm]
+\normalsize Submitted: January 2026\\
+Amrita Vishwa Vidyapeetham
+\end{center}
+
+\end{document}

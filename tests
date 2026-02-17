@@ -1,0 +1,6 @@
+from app import app
+import sys
+
+print("Dumping Routes:")
+for rule in app.url_map.iter_rules():
+    print(f"{rule} -> {rule.methods}")
