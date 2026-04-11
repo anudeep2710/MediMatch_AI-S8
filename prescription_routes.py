@@ -1,5 +1,5 @@
 """
-Prescription OCR Flask Routes - Hosted API + Gemini Vision Fallback
+Prescription OCR Flask Routes - Gemini Vision (local) only
 """
 
 from flask import request, jsonify, render_template
@@ -9,8 +9,6 @@ import uuid
 import logging
 import sys
 import traceback
-import base64
-import requests
 from datetime import datetime
 
 # Import models
@@ -20,9 +18,6 @@ logger = logging.getLogger(__name__)
 
 # Global reference
 gemini_ocr = None
-
-# Hosted API endpoint (primary)
-HOSTED_OCR_API = "https://us-central1-medimatch-f446c.cloudfunctions.net/gemini_medical_assistant"
 
 # Allowed file extensions
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'tiff', 'webp'}
@@ -45,99 +40,6 @@ def get_gemini_ocr():
             gemini_ocr = None
     return gemini_ocr
 
-def process_with_hosted_api(image_path):
-    """
-    Process prescription image using hosted MediMatch API (primary method).
-    Converts image to base64 and sends to hosted endpoint.
-    """
-    try:
-        print(f"[HOSTED API] Processing image: {image_path}", file=sys.stderr)
-
-        # Read and encode image to base64
-        with open(image_path, 'rb') as image_file:
-            image_data = image_file.read()
-            base64_image = base64.b64encode(image_data).decode('utf-8')
-
-        print(f"[HOSTED API] Image encoded, size: {len(base64_image)} chars", file=sys.stderr)
-
-        # Send to hosted API
-        response = requests.post(
-            HOSTED_OCR_API,
-            headers={'Content-Type': 'application/json'},
-            json={'image_base64': base64_image},
-            timeout=60  # 60 second timeout
-        )
-
-        print(f"[HOSTED API] Response status: {response.status_code}", file=sys.stderr)
-
-        if response.status_code == 200:
-            result = response.json()
-            print(f"[HOSTED API] ✅ Success! Response received.", file=sys.stderr)
-
-            # Parse the response - hosted API returns 'response' field with formatted text
-            if 'response' in result:
-                return parse_hosted_api_response(result['response'])
-            return result
-        else:
-            print(f"[HOSTED API] ❌ Error: {response.status_code} - {response.text}", file=sys.stderr)
-            return None
-
-    except requests.exceptions.Timeout:
-        print("[HOSTED API] ❌ Request timed out", file=sys.stderr)
-        return None
-    except Exception as e:
-        print(f"[HOSTED API] ❌ Error: {e}", file=sys.stderr)
-        traceback.print_exc()
-        return None
-
-def parse_hosted_api_response(response_text):
-    """
-    Parse the formatted text response from hosted API into structured data.
-    The hosted API returns formatted text with medicine info.
-    """
-    result = {
-        'raw_text': response_text,
-        'overall_confidence': 0.85,   
-        'prescription_items': [],
-        'source': 'hosted_api'
-    }
-
-    # Try to extract medicine names and details from the response
-    lines = response_text.split('\n')
-    current_item = None
-
-    for line in lines:
-        line = line.strip()
-        if not line:
-            continue
-
-        # Look for medicine names (usually in bold or numbered)
-        if line.startswith('**') and line.endswith('**'):
-            # Bold text - likely medicine name
-            if current_item:
-                result['prescription_items'].append(current_item)
-            current_item = {
-                'drug_name': line.strip('*').strip(),
-                'dosage': '',
-                'frequency': '',
-                'duration': '',
-                'confidence': 0.85
-            }
-        elif current_item:
-            # Try to extract dosage, frequency, duration from subsequent lines
-            line_lower = line.lower()
-            if 'mg' in line_lower or 'ml' in line_lower or 'tablet' in line_lower:
-                current_item['dosage'] = line
-            elif 'daily' in line_lower or 'times' in line_lower or 'once' in line_lower or 'twice' in line_lower:
-                current_item['frequency'] = line
-            elif 'day' in line_lower or 'week' in line_lower or 'month' in line_lower:
-                current_item['duration'] = line
-
-    # Add last item
-    if current_item:
-        result['prescription_items'].append(current_item)
-
-    return result
 
 def register_prescription_routes(app):
     """Register prescription OCR routes"""
@@ -155,9 +57,7 @@ def register_prescription_routes(app):
     
     @app.route('/api/prescription/upload', methods=['POST'])
     def upload_prescription():
-        # Get API mode from request (default to 'hosted')
-        api_mode = request.form.get('api_mode', 'hosted')
-        print(f"[PRESCRIPTION] Upload endpoint called (Mode: {api_mode})", file=sys.stderr)
+        print("[PRESCRIPTION] Upload endpoint called (Local Gemini only)", file=sys.stderr)
 
         if 'prescription_image' not in request.files:
             return jsonify({'error': 'No file uploaded'}), 400
@@ -175,37 +75,16 @@ def register_prescription_routes(app):
             file.save(filepath)
             print(f"[PRESCRIPTION] Saved to {filepath}", file=sys.stderr)
 
-            result = None
+            # Always use local Gemini Vision
+            ocr = get_gemini_ocr()
+            if not ocr:
+                return jsonify({'error': 'Local Gemini Vision not available. Check GEMINI_API_KEY in .env'}), 500
 
-            if api_mode == 'local':
-                # User chose local Gemini Vision (no OCR engine selection - always use Gemini)
-                print("[PRESCRIPTION] Using local Gemini Vision (user selected)...", file=sys.stderr)
-                ocr = get_gemini_ocr()
-                if ocr:
-                    result = ocr.process_image(filepath)
-                    if result and 'error' not in result:
-                        result['source'] = 'local_gemini'
-                    else:
-                        return jsonify({'error': result.get('error', 'Gemini Vision processing failed')}), 500
-                else:
-                    return jsonify({'error': 'Local Gemini Vision not available. Check GEMINI_API_KEY in .env'}), 500
-            else:
-                # Default: Try hosted API first, fallback to local
-                print("[PRESCRIPTION] Trying hosted MediMatch API (primary)...", file=sys.stderr)
-                result = process_with_hosted_api(filepath)
+            result = ocr.process_image(filepath)
+            if not result or 'error' in result:
+                return jsonify({'error': result.get('error', 'Gemini Vision processing failed')}), 500
 
-                # FALLBACK: If hosted API fails, use local Gemini Vision
-                if result is None:
-                    print("[PRESCRIPTION] Hosted API failed, falling back to local Gemini Vision...", file=sys.stderr)
-                    ocr = get_gemini_ocr()
-                    if ocr:
-                        result = ocr.process_image(filepath)
-                        if result and 'error' not in result:
-                            result['source'] = 'local_gemini_fallback'
-                        else:
-                            return jsonify({'error': 'Both hosted API and local Gemini failed. ' + result.get('error', '')}), 500
-                    else:
-                        return jsonify({'error': 'Both hosted API and local Gemini failed. Check configuration.'}), 500
+            result['source'] = 'local_gemini'
 
             # Add metadata for frontend
             result['prescription_id'] = prescription_id
@@ -350,4 +229,61 @@ def register_prescription_routes(app):
             'drugs_checked': drugs
         })
 
-    logger.info("✅ MediMatch Prescription Routes Registered (Hosted API + Gemini Fallback)")
+    @app.route('/api/expiry/check', methods=['POST'])
+    def check_expiry():
+        """Stateless Endpoint: Check expiry using CAMEE multimodal algorithm"""
+        try:
+            print("[CAMEE] Stateless expiry check requested", file=sys.stderr)
+            
+            # Need to get image_front and image_back
+            if 'image_front' not in request.files or 'image_back' not in request.files:
+                return jsonify({'error': 'Both image_front and image_back are required for maximum accuracy'}), 400
+                
+            files = []
+            temps = []
+            
+            # Extract front image
+            f_front = request.files['image_front']
+            if allowed_file(f_front.filename):
+                files.append(f_front)
+                    
+            # Extract back image
+            f_back = request.files['image_back']
+            if allowed_file(f_back.filename):
+                files.append(f_back)
+                    
+            if not files:
+                return jsonify({'error': 'Valid image not provided'}), 400
+                
+            from prescription_ocr.expiry_extractor import CAMEEVerifier
+            verifier = CAMEEVerifier()
+            
+            # Temporarily save images to pass paths to extraction algorithms
+            upload_dir = app.config['UPLOAD_FOLDER']
+            for f in files:
+                ext = f.filename.rsplit('.', 1)[1].lower()
+                temp_filename = f"temp_camee_{uuid.uuid4().hex[:8]}.{ext}"
+                temp_path = os.path.join(upload_dir, temp_filename)
+                f.save(temp_path)
+                temps.append(temp_path)
+                
+            # Perform verification
+            result = verifier.process_images(temps)
+            
+            # Important: Stateless cleanup, delete temporary files immediately
+            for temp_path in temps:
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
+                    
+            return jsonify(result)
+            
+        except Exception as e:
+            # Clean up if failed
+            for temp_path in temps:
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
+            print(f"[CAMEE ERROR] {e}", file=sys.stderr)
+            traceback.print_exc()
+            return jsonify({'error': str(e)}), 500
+
+    logger.info("✅ MediMatch Prescription Routes Registered (Hosted API + Gemini Fallback + CAMEE)")

@@ -59,7 +59,7 @@ function generatePDF() {
     const confidence = result.overall_confidence ? (result.overall_confidence * 100).toFixed(0) + '%' : 'N/A';
 
     doc.text(`AI Confidence: ${confidence}`, 15, yPos);
-    doc.text(`Source: ${result.source === 'hosted_api' ? 'MediMatch Cloud API' : 'Local Vision API'}`, 15, yPos + 6);
+    doc.text('Source: Gemini Vision (local)', 15, yPos + 6);
 
     yPos += 20;
 

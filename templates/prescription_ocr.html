@@ -152,16 +152,6 @@
                         </div>
                     </div>
 
-                    <!-- API Selection -->
-                    <div class="bg-light p-3 rounded-4 mb-4">
-                        <label class="form-label fw-bold small text-muted text-uppercase">Processing Engine</label>
-                        <select id="apiSelection" class="form-select border-0 shadow-sm mb-2" style="border-radius: 10px;">
-                            <option value="hosted" selected>MediMatch Cloud (Fastest)</option>
-                            <option value="local">Gemini Vision (Manual API Key)</option>
-                        </select>
-                        <p id="apiDescription" class="small text-muted mb-0"><i class="bi bi-info-circle me-1"></i>Optimized medical OCR engine.</p>
-                    </div>
-
                     <button id="uploadBtn" disabled class="btn btn-primary w-100 btn-lg py-3 shadow">
                         <i class="bi bi-cpu me-2"></i>Analyze Prescription
                     </button>
@@ -304,17 +294,6 @@
 
         let selectedFile = null;
 
-        const apiSelection = document.getElementById('apiSelection');
-        const apiDescription = document.getElementById('apiDescription');
-
-        apiSelection.addEventListener('change', () => {
-            if (apiSelection.value === 'local') {
-                apiDescription.innerHTML = '<i class="bi bi-info-circle me-1"></i>Local processing uses Gemini Vision with your API key';
-            } else {
-                apiDescription.innerHTML = '<i class="bi bi-info-circle me-1"></i>Optimized medical OCR engine.';
-            }
-        });
-
         uploadZone.addEventListener('click', () => fileInput.click());
         browseBtn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -362,12 +341,9 @@
 
             const formData = new FormData();
             formData.append('prescription_image', selectedFile);
-            formData.append('api_mode', apiSelection.value);
 
             const progressText = document.getElementById('progressText');
-            progressText.textContent = apiSelection.value === 'hosted'
-                ? 'MediMatch Cloud is analyzing...'
-                : 'Local Gemini Vision is processing...';
+            progressText.textContent = 'Gemini Vision is processing...';
 
             progress.classList.remove('d-none');
             resultsContainer.classList.add('d-none');

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediMatch - Expiry Checker (CAMEE)</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="/static/css/navbar.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #009688 0%, #00796B 50%, #004D40 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333;
+        }
+        .navbar {
+            background: rgba(0, 77, 64, 0.95) !important;
+            backdrop-filter: blur(10px);
+        }
+        .navbar-brand { font-weight: 700; color: white !important; }
+        .nav-link { color: rgba(255, 255, 255, 0.85) !important; font-weight: 500; }
+        
+        .main-container { margin-top: 30px; margin-bottom: 50px; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        
+        .drop-zone {
+            border: 2px dashed #009688;
+            border-radius: 12px;
+            background: #f8fbfa;
+            transition: all 0.3s;
+            text-align: center;
+            cursor: pointer;
+            padding: 30px 20px;
+        }
+        .drop-zone:hover {
+            background: #e0f2f1;
+            border-color: #00796B;
+        }
+        
+        .result-safe {
+            background: #e8f5e9;
+            border-left: 5px solid #2e7d32;
+            color: #2e7d32;
+        }
+        
+        .result-near {
+            background: #fff8e1;
+            border-left: 5px solid #ff8f00;
+            color: #ff8f00;
+        }
+        
+        .result-expired {
+            background: #ffebee;
+            border-left: 5px solid #c62828;
+            color: #c62828;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-capsule-pill me-2"></i>MediMatch
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="/"><i class="bi bi-search me-1"></i>Search</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/expiry-checker"><i class="bi bi-calendar2-x me-1"></i>Expiry Checker</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/prescription-ocr"><i class="bi bi-camera me-1"></i>Scanner</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container main-container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="glass-card">
+                    <h3 class="text-center fw-bold mb-1" style="color: #00796B;">
+                        <i class="bi bi-shield-check me-2"></i>Medicine Expiry Checker
+                    </h3>
+                    <p class="text-center text-muted mb-4 small">
+                        Powered by CAMEE (Confidence-Aware Multimodal Expiry Extraction)
+                    </p>
+
+                    <form id="expiryForm" enctype="multipart/form-data">
+                        <div class="row g-4 mb-4">
+                            <div class="col-md-6">
+                                <label class="fw-bold mb-2">Front Image (Required)</label>
+                                <div class="drop-zone" onclick="document.getElementById('image_front').click()">
+                                    <i class="bi bi-image fs-1 text-primary"></i>
+                                    <p class="mt-2 mb-0 fw-bold">Click to Upload</p>
+                                    <small class="text-muted" id="front-label">Select packaging front</small>
+                                </div>
+                                <input type="file" id="image_front" name="image_front" class="d-none" accept="image/*" required onchange="updateLabel('image_front', 'front-label')">
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="fw-bold mb-2">Back Image (Required)</label>
+                                <div class="drop-zone" onclick="document.getElementById('image_back').click()">
+                                    <i class="bi bi-image fs-1 text-secondary"></i>
+                                    <p class="mt-2 mb-0 fw-bold">Click to Upload</p>
+                                    <small class="text-muted" id="back-label">Select packaging back</small>
+                                </div>
+                                <input type="file" id="image_back" name="image_back" class="d-none" accept="image/*" required onchange="updateLabel('image_back', 'back-label')">
+                            </div>
+                        </div>
+                        
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-lg w-100 fw-bold" style="background:#009688; color:white;" id="submitBtn">
+                                <i class="bi bi-search me-2"></i>Verify Expiry
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Loading Spinner -->
+                    <div id="loading" class="text-center mt-5" style="display: none;">
+                        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
+                        <h5 class="mt-3 text-muted">Running CAMEE Analytics (OCR + VLM Fusion)...</h5>
+                    </div>
+
+                    <!-- Result Card -->
+                    <div id="resultBox" class="mt-5 p-4 rounded d-none shadow-sm">
+                        <div class="d-flex align-items-center">
+                            <div id="statusIcon" class="me-3 fs-1"></div>
+                            <div>
+                                <h4 id="statusText" class="fw-bold mb-1"></h4>
+                                <p class="mb-0 fs-5">Calculated Date: <b id="expiryDateText"></b></p>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 pt-3 border-top">
+                            <h6 class="fw-bold text-muted mb-2">Algorithm Confidence Metics</h6>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>CAMEE Fusion Score:</span>
+                                <span class="badge bg-secondary fs-6" id="confidencePill"></span>
+                            </div>
+                            <div class="mt-2 small text-muted">
+                                <i>Raw OCR:</i> <span id="debugOcr"></span><br>
+                                <i>Cross-Agreement Match:</i> <span id="debugAgree"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function updateLabel(inputId, labelId) {
+            const input = document.getElementById(inputId);
+            if (input.files && input.files[0]) {
+                document.getElementById(labelId).innerText = input.files[0].name;
+            }
+        }
+
+        document.getElementById('expiryForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const form = document.getElementById('expiryForm');
+            const submitBtn = document.getElementById('submitBtn');
+            const loading = document.getElementById('loading');
+            const resultBox = document.getElementById('resultBox');
+            
+            submitBtn.disabled = true;
+            loading.style.display = 'block';
+            resultBox.classList.add('d-none');
+            
+            const formData = new FormData(form);
+            
+            try {
+                const response = await fetch('/api/expiry/check', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    alert("Error: " + data.error);
+                } else {
+                    // Update UI map
+                    resultBox.className = "mt-5 p-4 rounded shadow-sm"; // reset classes
+                    let iconHtml = "";
+                    let displayStat = "";
+                    
+                    if (data.status === "SAFE") {
+                        resultBox.classList.add("result-safe");
+                        iconHtml = '<i class="bi bi-check-circle-fill"></i>';
+                        displayStat = "Safe to Consume";
+                    } else if (data.status === "NEAR_EXPIRY") {
+                        resultBox.classList.add("result-near");
+                        iconHtml = '<i class="bi bi-exclamation-triangle-fill"></i>';
+                        displayStat = "Near Expiration";
+                    } else if (data.status === "EXPIRED") {
+                        resultBox.classList.add("result-expired");
+                        iconHtml = '<i class="bi bi-x-circle-fill"></i>';
+                        displayStat = "EXPIRED - Do Not Consume";
+                    } else {
+                        resultBox.classList.add("bg-light");
+                        iconHtml = '<i class="bi bi-question-circle-fill text-muted"></i>';
+                        displayStat = "Inconclusive";
+                    }
+                    
+                    document.getElementById('statusIcon').innerHTML = iconHtml;
+                    document.getElementById('statusText').innerText = displayStat;
+                    document.getElementById('expiryDateText').innerText = data.expiry_date || "Not Found";
+                    
+                    document.getElementById('confidencePill').innerText = (data.confidence * 100).toFixed(1) + "%";
+                    document.getElementById('debugOcr').innerText = data.debug.ocr_raw || "None";
+                    document.getElementById('debugAgree').innerText = data.debug.agreement_score.toFixed(2);
+                    
+                    resultBox.classList.remove('d-none');
+                }
+            } catch (err) {
+                alert("Network failure.");
+            } finally {
+                submitBtn.disabled = false;
+                loading.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

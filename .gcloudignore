@@ -1,0 +1,36 @@
+# .gcloudignore - AGGRESSIVE exclusion to keep upload small
+.git
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+instance/
+static/uploads/
+
+# Exclude ALL data files (CSVs will be on GCS, downloaded at startup)
+data/
+
+# Ignore docs/tests/logs
+docs/
+tests/
+logs/
+*.log
+
+# Ignore env files
+.env
+.env.*
+
+# Ignore FAISS/pickle (downloaded from GCS at runtime)
+*.faiss
+*.pkl
+*.parquet
+
+# Ignore dev tools
+venv/
+env/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+node_modules/

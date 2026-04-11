@@ -25,11 +25,19 @@ from drug_lookup_service import lookup_drug, normalize_drug_name, check_interact
 # Load environment variables from .env file
 load_dotenv(override=True)
 
-# Check if environment variables are loaded
+# API keys are loaded from environment variables or .env file only.
+# Do NOT hardcode API keys here. Set them in your .env file or Cloud Run secrets.
 if not os.getenv('GROQ_API_KEY'):
-    print("[WARNING] GROQ_API_KEY not found in .env file")
+    print("[WARNING] GROQ_API_KEY not set. Drug Copilot will not work.")
 if not os.getenv('SERPER_API_KEY'):
-    print("[WARNING] SERPER_API_KEY not found in .env file")
+    print("[WARNING] SERPER_API_KEY not set. Web search features will not work.")
+if not os.getenv('GEMINI_API_KEY'):
+    print("[WARNING] GEMINI_API_KEY not set. Prescription OCR and Expiry Checker will not work.")
+
+# Verify keys are loaded
+print(f"[BOOT] GROQ_API_KEY loaded: {bool(os.getenv('GROQ_API_KEY'))}")
+print(f"[BOOT] SERPER_API_KEY loaded: {bool(os.getenv('SERPER_API_KEY'))}")
+print(f"[BOOT] GEMINI_API_KEY loaded: {bool(os.getenv('GEMINI_API_KEY'))}")
 from pyvis.network import Network
 import networkx as nx
 
@@ -61,12 +69,23 @@ try:
     import faiss
     import pickle
     
-    # Check if RAG files exist
+    # Resolve FAISS index + metadata paths with data/ fallback
     faiss_index_path = os.getenv("KG_FAISS_INDEX", "kg_faiss_index.faiss")
     faiss_meta_path = os.getenv("KG_FAISS_META", "kg_faiss_metadata.pkl")
+
+    # If not found in CWD, try data/ directory
+    if not os.path.exists(faiss_index_path):
+        candidate = os.path.join("data", os.path.basename(faiss_index_path))
+        if os.path.exists(candidate):
+            faiss_index_path = candidate
+
+    if not os.path.exists(faiss_meta_path):
+        candidate = os.path.join("data", os.path.basename(faiss_meta_path))
+        if os.path.exists(candidate):
+            faiss_meta_path = candidate
     
     if os.path.exists(faiss_index_path) and os.path.exists(faiss_meta_path):
-        print("[RAG] Loading FAISS index and metadata...")
+        print(f"[RAG] Loading FAISS index from {faiss_index_path} and metadata from {faiss_meta_path}...")
         embedder = SentenceTransformer("all-MiniLM-L6-v2")
         index = faiss.read_index(faiss_index_path)
         with open(faiss_meta_path, "rb") as f:
@@ -74,7 +93,7 @@ try:
         rag_enabled = True
         print("[RAG] System Active ✅")
     else:
-        print("[RAG] Index files not found. Running in LLM-only mode.")
+        print(f"[RAG] Index files not found (looked for {faiss_index_path} and {faiss_meta_path}). Running in LLM-only mode.")
 
 except ImportError:
     print("[RAG] Dependencies missing (faiss-cpu, sentence-transformers). RAG disabled.")
@@ -161,7 +180,8 @@ def drug_copilot():
 from models import db, User, SavedDrug, MedicationReminder, Prescription, PrescriptionItem
 from models import get_or_create_default_user
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///medimatch.db'
+# Allow DATABASE_URL override for production (e.g., Postgres on Cloud SQL)
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///medimatch.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize database
@@ -181,6 +201,15 @@ try:
     print("[DEBUG] Prescription routes registered successfully")
 except Exception as e:
     print(f"[WARNING] Could not register prescription OCR routes: {e}")
+
+
+# ========================================
+# Healthcheck
+# ========================================
+@app.route('/health', methods=['GET'])
+
+def health():
+    return jsonify(status="ok"), 200
 
 
 # ========================================
@@ -368,6 +397,10 @@ def load_drug_data():
 
 # Load data on startup
 drug_data = load_drug_data()
+print(f"[BOOT] Drug data loaded: {len(drug_data)} rows, Columns: {list(drug_data.columns) if len(drug_data) > 0 else 'EMPTY'}")
+print(f"[BOOT] data/ directory exists: {os.path.isdir('data')}")
+if os.path.isdir('data'):
+    print(f"[BOOT] data/ contents: {os.listdir('data')}")
 
 def assess_solubility(logP, logD, psa):
     # Example logic: good solubility if logP < 3, logD < 3, psa > 75
@@ -433,6 +466,11 @@ def serialize_drug_data(drug):
 def pharmacy_locator():
     """Find nearby pharmacies using OpenStreetMap"""
     return render_template('pharmacy_locator.html')
+
+@app.route('/expiry-checker')
+def expiry_checker():
+    """CAMEE MM Expiry Checker Interface"""
+    return render_template('expiry_checker.html')
 
 # @app.route('/drug_copilot', methods=['POST'])
 def drug_copilot_query():
@@ -559,30 +597,60 @@ def generate_kg_visualization(drug_name, max_nodes=15):
         # Load KG data
         df = pd.read_csv('data/pharmasage_kg_triples_cleaned.csv')
         
-        # Filter triples for this drug
-        drug_df = df[df['head'].str.lower() == drug_name.lower()]
+        # Filter triples where the drug is either head or tail (bidirectional view)
+        base_mask = (df['head'].str.lower() == drug_name.lower()) | (df['tail'].astype(str).str.lower() == drug_name.lower())
+        drug_df = df[base_mask]
         
         if drug_df.empty:
             return None
         
-        # Limit number of relations
+        # Limit initial relations
         drug_df = drug_df.head(max_nodes)
         
-        # Create NetworkX graph
-        G = nx.DiGraph()
+        # Expand to a small mesh: include edges touching any first-hop neighbor
+        neighbors = set(drug_df['head']).union(drug_df['tail'].astype(str))
+        neighbor_mask = df['head'].isin(neighbors) | df['tail'].astype(str).isin(neighbors)
+        neighbor_df = df[neighbor_mask].head(max_nodes * 2)
         
-        # Add nodes and edges
+        kg_df = pd.concat([drug_df, neighbor_df]).drop_duplicates().head(max_nodes * 3)
+        
+        # Identify direct neighbors for styling
+        direct_neighbors = set()
         for _, row in drug_df.iterrows():
+            if str(row['head']).lower() != drug_name.lower():
+                direct_neighbors.add(str(row['head']))
+            if str(row['tail']).lower() != drug_name.lower():
+                direct_neighbors.add(str(row['tail']))
+        
+        # Create undirected graph for bidirectional/mesh visualization
+        G = nx.Graph()
+        
+        # Pre-style the central drug node
+        G.add_node(drug_name, color='#ff9800', shape='dot', size=36, title=drug_name)
+        
+        # Add nodes and edges (both directions visualized via undirected graph)
+        for _, row in kg_df.iterrows():
             src = row['head']
             relation = row['relation']
             dst = str(row['tail'])
             
-            G.add_node(src, color='orange', shape='dot', size=30)
-            G.add_node(dst, color='lightblue', shape='box', size=20)
-            G.add_edge(src, dst, label=relation, title=relation)
+            # Style nodes: direct neighbors vs others
+            def node_style(node):
+                if node.lower() == drug_name.lower():
+                    return {'color': '#ff9800', 'shape': 'dot', 'size': 36}
+                if node in direct_neighbors:
+                    return {'color': '#4db6ac', 'shape': 'box', 'size': 22}
+                return {'color': '#90caf9', 'shape': 'box', 'size': 18}
+            
+            src_style = node_style(src)
+            dst_style = node_style(dst)
+            
+            G.add_node(src, **src_style, title=src)
+            G.add_node(dst, **dst_style, title=dst)
+            G.add_edge(src, dst, label=relation, title=relation, color='#ffa000', width=1.5)
         
-        # Generate HTML file
-        net = Network(height='500px', width='100%', directed=True, notebook=False, cdn_resources='remote')
+        # Generate HTML file (undirected mesh)
+        net = Network(height='600px', width='100%', directed=False, notebook=False, cdn_resources='remote', bgcolor='#ffffff', font_color='#222222')
         net.from_nx(G)
         
         # Customize graph
@@ -592,12 +660,28 @@ def generate_kg_visualization(drug_name, max_nodes=15):
             "font": {"size": 14}
           },
           "edges": {
-            "arrows": {"to": {"enabled": true}},
-            "smooth": {"type": "dynamic"}
+            "arrows": {"to": {"enabled": false}},
+            "smooth": {"type": "dynamic"},
+            "color": {"inherit": false, "color": "#ffa000"}
           },
           "physics": {
             "enabled": true,
-            "stabilization": {"enabled": true, "iterations": 200}
+            "solver": "forceAtlas2Based",
+            "forceAtlas2Based": {
+              "gravitationalConstant": -50,
+              "centralGravity": 0.02,
+              "springLength": 110,
+              "springConstant": 0.08,
+              "damping": 0.4,
+              "avoidOverlap": 0.7
+            },
+            "stabilization": {"enabled": true, "iterations": 300}
+          },
+          "interaction": {
+            "hover": true,
+            "tooltipDelay": 120,
+            "hideEdgesOnDrag": false,
+            "navigationButtons": true
           }
         }
         """)
@@ -856,10 +940,12 @@ def generate_comparison_summary(drug1, drug2):
         return summary_points
     # If one is missing
     if not drug1:
-        summary_points.append(f"Unfortunately, no information was found for the first molecule. However, here's what we know about {drug2.get('drug_name', 'the second molecule')}: {', '.join([f'{k.replace('_', ' ').title()}: {v}' for k, v in drug2.items() if k != 'drug_name'])}.")
+        drug2_details = ', '.join([f"{k.replace('_', ' ').title()}: {v}" for k, v in drug2.items() if k != 'drug_name'])
+        summary_points.append(f"Unfortunately, no information was found for the first molecule. However, here's what we know about {drug2.get('drug_name', 'the second molecule')}: {drug2_details}.")
         return summary_points
     if not drug2:
-        summary_points.append(f"Unfortunately, no information was found for the second molecule. However, here's what we know about {drug1.get('drug_name', 'the first molecule')}: {', '.join([f'{k.replace('_', ' ').title()}: {v}' for k, v in drug1.items() if k != 'drug_name'])}.")
+        drug1_details = ', '.join([f"{k.replace('_', ' ').title()}: {v}" for k, v in drug1.items() if k != 'drug_name'])
+        summary_points.append(f"Unfortunately, no information was found for the second molecule. However, here's what we know about {drug1.get('drug_name', 'the first molecule')}: {drug1_details}.")
         return summary_points
     drug1_name = drug1.get('drug_name', 'Molecule 1')
     drug2_name = drug2.get('drug_name', 'Molecule 2')
@@ -1264,4 +1350,6 @@ if __name__ == '__main__':
     import os
     print(app.url_map)
     debug_mode = os.getenv('FLASK_ENV') == 'development' or os.getenv('DEBUG', 'False').lower() == 'true'
-    app.run(debug=debug_mode, host='0.0.0.0', port=5000)
+    auto_reload = os.getenv('FLASK_RELOAD', 'true').lower() in ('1', 'true', 'yes', 'on')
+    app.run(debug=debug_mode or auto_reload, host='0.0.0.0', port=5000, use_reloader=auto_reload)
+
