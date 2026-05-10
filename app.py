@@ -467,11 +467,6 @@ def pharmacy_locator():
     """Find nearby pharmacies using OpenStreetMap"""
     return render_template('pharmacy_locator.html')
 
-@app.route('/expiry-checker')
-def expiry_checker():
-    """CAMEE MM Expiry Checker Interface"""
-    return render_template('expiry_checker.html')
-
 # @app.route('/drug_copilot', methods=['POST'])
 def drug_copilot_query():
     """Handle drug copilot queries using Groq API with humanized responses"""
